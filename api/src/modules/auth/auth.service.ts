@@ -1,17 +1,25 @@
-import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto';
-import { SequenceService } from '@common/database/sequence.service';
-import { SALT_ROUNDS, SEQUENCE } from '@common/constants';
 import { UserNameUtil } from '@common/utils/username.util';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
-import { RoleUser } from '@prisma/client';
+import { PurposeOTP, RoleUser } from '@prisma/client';
 import { UserMapper } from '@modules/users/mapper/user.mapper';
 import { UserSelect } from '@modules/users/selects/user.select';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { LoginDto } from './dto/login.dto';
+import { SALT_ROUNDS, SEQUENCE } from './auth.constants';
+import { OtpService } from '@modules/otp/otp.service';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { UsersService } from '@modules/users/users.service';
 
 @Injectable()
 export class AuthService {
@@ -19,9 +27,11 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
-    private readonly sequenceService: SequenceService,
+    private readonly otpService: OtpService,
+    private readonly userService: UsersService,
   ) {}
 
+  // Register a new teacher
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
     const { email, fullName, password } = registerDto;
 
@@ -39,7 +49,7 @@ export class AuthService {
 
     try {
       // 1. Get teacher Number from sequence
-      const teacherNo = await this.sequenceService.next(SEQUENCE.TEACHER);
+      const teacherNo = await this.prisma.nextSequence(SEQUENCE.TEACHER);
       // 2. Generate username using the teacher number
       const userName = UserNameUtil.teacher(teacherNo);
       // 3. Hash the password
@@ -58,6 +68,10 @@ export class AuthService {
 
       const tokens = await this.generateTokens(user.id, user.userName);
       await this.updateRefreshToken(user.id, tokens.refreshToken);
+
+      // Send OTP for user verify
+      await this.otpService.sendOtp(email, PurposeOTP.REGISTER);
+
       return {
         ...tokens,
         user: UserMapper.toResponse(user),
@@ -70,6 +84,45 @@ export class AuthService {
     }
   }
 
+  // Verify OTP
+  async verifyOtp(otp: VerifyOtpDto): Promise<string> {
+    const { email, code, purpose } = otp;
+    await this.otpService.verifyOtp(email, code, purpose);
+
+    switch (purpose) {
+      case PurposeOTP.REGISTER:
+        await this.userService.markEmailVerified(email);
+        break;
+      case PurposeOTP.RESET_PASSWORD:
+        break;
+    }
+
+    return 'OTP verified successfully';
+  }
+
+  // Login for an existing teacher and student
+  async login(loginDto: LoginDto): Promise<AuthResponseDto> {
+    const { identifier, password } = loginDto;
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: identifier }, { userName: identifier }],
+      },
+    });
+
+    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const tokens = await this.generateTokens(user.id, user.userName);
+    await this.updateRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      ...tokens,
+      user: UserMapper.toResponse(user),
+    };
+  }
+
   private async generateTokens(
     userId: string,
     userName: string,
@@ -77,14 +130,12 @@ export class AuthService {
     const payload = { sub: userId, userName };
     const refreshId = randomBytes(16).toString('hex');
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, {
-        expiresIn: Number(this.configService.getOrThrow<number>('JWT_EXPIRES_IN')),
-      }),
+      this.jwtService.signAsync(payload),
       this.jwtService.signAsync(
         { ...payload, refreshId },
         {
           secret: this.configService.getOrThrow('JWT_REFRESH_SECRET'),
-          expiresIn: Number(this.configService.getOrThrow<number>('JWT_REFRESH_EXPIRES_IN')),
+          expiresIn: Number(this.configService.getOrThrow('JWT_REFRESH_EXPIRES_IN')),
         },
       ),
     ]);

@@ -19,6 +19,8 @@ CREATE TABLE "users" (
     "refreshToken" TEXT,
     "studentNo" INTEGER,
     "teacherNo" INTEGER,
+    "mustChangePassword" BOOLEAN NOT NULL DEFAULT false,
+    "emailVerified" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -35,18 +37,6 @@ CREATE TABLE "managers" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "managers_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "email_verifications" (
-    "id" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
-    "code" TEXT NOT NULL,
-    "purpose" "PurposeOTP" NOT NULL,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "email_verifications_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -68,23 +58,23 @@ CREATE INDEX "users_role_idx" ON "users"("role");
 CREATE INDEX "users_fullName_idx" ON "users"("fullName");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "managers_email_key" ON "managers"("email");
+CREATE INDEX "users_createdAt_idx" ON "users"("createdAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "email_verifications_email_purpose_key" ON "email_verifications"("email", "purpose");
+CREATE UNIQUE INDEX "managers_email_key" ON "managers"("email");
 
 -- Teacher sequence
-CREATE SEQUENCE teacher_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+  CREATE SEQUENCE teacher_seq
+  START WITH 1
+  INCREMENT BY 1
+  NO MINVALUE
+  NO MAXVALUE
+  CACHE 1;
 
 -- Student sequence
-CREATE SEQUENCE student_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+  CREATE SEQUENCE student_seq
+  START WITH 1
+  INCREMENT BY 1
+  NO MINVALUE
+  NO MAXVALUE
+  CACHE 1;

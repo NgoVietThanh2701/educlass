@@ -1,6 +1,6 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -40,5 +40,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         }
       }),
     );
+  }
+
+  async nextSequence(name: string): Promise<number> {
+    const result = await this.$queryRaw<{ nextval: bigint }[]>(
+      Prisma.sql`SELECT nextval(${name}::regclass)::bigint AS nextval`,
+    );
+
+    return Number(result[0].nextval);
   }
 }

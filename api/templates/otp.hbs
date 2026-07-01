@@ -1,0 +1,43 @@
+<!-- mail/templates/otp.hbs -->
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        color: #333;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .code {
+        font-size: 24px;
+        font-weight: bold;
+        letter-spacing: 4px;
+        background: #f4f4f4;
+        padding: 10px;
+        text-align: center;
+      }
+      .footer {
+        margin-top: 30px;
+        font-size: 12px;
+        color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <h2>Xác thực tài khoản</h2>
+      <p>Bạn đã yêu cầu mã OTP cho mục đích: <strong>{{purpose}}</strong>.</p>
+      <p>Mã OTP của bạn (có hiệu lực trong {{ttl}} phút):</p>
+      <div class='code'>{{otp}}</div>
+      <p>Vui lòng không chia sẻ mã này với bất kỳ ai.</p>
+      <div class='footer'>
+        <p>Email được gửi tự động, vui lòng không trả lời. Mọi thắc mắc liên hệ
+          <a href='mailto:{{supportEmail}}'>{{supportEmail}}</a></p>
+      </div>
+    </div>
+  </body>
+</html>

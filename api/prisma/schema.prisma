@@ -41,11 +41,14 @@ model User {
   refreshToken  String? // hash refresh token
   studentNo     Int?      @unique
   teacherNo     Int?      @unique
+  mustChangePassword Boolean @default(false)
+  emailVerified Boolean @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   @@index([role])
   @@index([fullName])
+  @@index([createdAt])
   @@map("users") // the name of the table
 }
 
@@ -58,16 +61,4 @@ model Manager {
   updatedAt     DateTime  @updatedAt
 
   @@map("managers")
-}
-
-model EmailVerification {
-  id String @id @default(uuid())
-  email String
-  code String
-  purpose PurposeOTP
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@unique([email, purpose])
-  @@map("email_verifications")
 }
