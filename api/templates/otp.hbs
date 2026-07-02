@@ -1,43 +1,169 @@
-<!-- mail/templates/otp.hbs -->
-<html>
+<html lang='vi'>
   <head>
-    <meta charset='utf-8' />
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Mã xác thực OTP</title>
+
     <style>
       body {
-        font-family: Arial, sans-serif;
-        color: #333;
+        margin: 0;
+        padding: 24px;
+        background: #f5f7fb;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #374151;
       }
+
       .container {
-        max-width: 600px;
+        max-width: 520px;
         margin: 0 auto;
-        padding: 20px;
       }
-      .code {
-        font-size: 24px;
-        font-weight: bold;
-        letter-spacing: 4px;
-        background: #f4f4f4;
-        padding: 10px;
+
+      .card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .header {
+        padding: 28px 32px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .brand {
+        font-size: 22px;
+        font-weight: 700;
+        color: #2563eb;
+        margin: 0;
+      }
+
+      .content {
+        padding: 32px;
+        font-size: 15px;
+        line-height: 1.7;
+      }
+
+      h2 {
+        margin: 0 0 20px;
+        font-size: 22px;
+        color: #111827;
+      }
+
+      p {
+        margin: 0 0 16px;
+      }
+
+      .otp {
+        margin: 28px 0;
         text-align: center;
+        font-size: 34px;
+        font-weight: bold;
+        letter-spacing: 8px;
+        color: #2563eb;
+        background: #f8fafc;
+        border: 1px solid #dbeafe;
+        border-radius: 8px;
+        padding: 18px;
       }
+
+      .note {
+        font-size: 14px;
+        color: #6b7280;
+      }
+
       .footer {
-        margin-top: 30px;
-        font-size: 12px;
-        color: #888;
+        border-top: 1px solid #e5e7eb;
+        padding: 24px 32px;
+        font-size: 13px;
+        color: #9ca3af;
+        line-height: 1.6;
+      }
+
+      a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+
+      @media only screen and (max-width: 600px) {
+        body {
+          padding: 12px;
+        }
+
+        .content,
+        .header,
+        .footer {
+          padding: 18px;
+        }
+
+        .otp {
+          font-size: 28px;
+          letter-spacing: 6px;
+        }
       }
     </style>
   </head>
+
   <body>
+
     <div class='container'>
-      <h2>Xác thực tài khoản</h2>
-      <p>Bạn đã yêu cầu mã OTP cho mục đích: <strong>{{purpose}}</strong>.</p>
-      <p>Mã OTP của bạn (có hiệu lực trong {{ttl}} phút):</p>
-      <div class='code'>{{otp}}</div>
-      <p>Vui lòng không chia sẻ mã này với bất kỳ ai.</p>
-      <div class='footer'>
-        <p>Email được gửi tự động, vui lòng không trả lời. Mọi thắc mắc liên hệ
-          <a href='mailto:{{supportEmail}}'>{{supportEmail}}</a></p>
+
+      <div class='card'>
+
+        <div class='header'>
+          <h1 class='brand'>Edu Class</h1>
+        </div>
+
+        <div class='content'>
+
+          <h2>Xác thực tài khoản</h2>
+
+          <p>
+            Xin chào, Chúng tôi nhận được yêu cầu
+            <strong>{{purpose}}</strong>.
+          </p>
+
+          <p>Vui lòng sử dụng mã OTP dưới đây để tiếp tục:</p>
+
+          <div class='otp'>
+            {{otp}}
+          </div>
+
+          <p class='note'>
+            Mã có hiệu lực trong
+            <strong>{{ttl}} phút</strong>.
+          </p>
+
+          <p class='note'>
+            Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.
+          </p>
+
+          <p style='margin-top:32px;'>
+            Trân trọng,<br />
+            <strong>Edu Class Team</strong>
+          </p>
+
+        </div>
+
+        <div class='footer'>
+          Email này được gửi tự động, vui lòng không trả lời.
+
+          <br /><br />
+
+          Hỗ trợ:
+          <a href='mailto:{{supportEmail}}'>
+            {{supportEmail}}
+          </a>
+
+          <br /><br />
+
+          ©
+          {{currentYear}}
+          Edu Class. All rights reserved.
+        </div>
+
       </div>
+
     </div>
+
   </body>
 </html>

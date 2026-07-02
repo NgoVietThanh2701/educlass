@@ -1,22 +1,29 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { MailService } from '@modules/mail/mail.service';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   // Find user by email
   async findByEmail(email: string) {
-    return this.prisma.user.findUnique({ where: { email } });
+    return this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, userName: true, fullName: true },
+    });
   }
 
   // Mark user email is verified
-  async markEmailVerified(email: string) {
-    const user = await this.findByEmail(email);
-    if (!user) throw new NotFoundException('User not found');
-    return this.prisma.user.update({
+  async markEmailVerified(email: string, fullName: string) {
+    await this.prisma.user.update({
       where: { email },
       data: { emailVerified: true },
     });
+
+    await this.mailService.sendWelcomeEmail(email, fullName);
   }
 }

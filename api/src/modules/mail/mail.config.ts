@@ -7,15 +7,15 @@ export const mailConfig = (config: ConfigService) => ({
     host: config.getOrThrow('MAIL_HOST'),
     port: Number(config.getOrThrow('MAIL_PORT')),
     secure: config.getOrThrow('MAIL_SECURE') === 'true', // true cho 465
-    //pool: true,
-    //maxConnections: 5,
+    pool: true,
+    maxConnections: 5,
     auth: {
       user: config.getOrThrow('MAIL_USER'),
       pass: config.getOrThrow('MAIL_PASSWORD'),
     },
   },
   defaults: {
-    from: `"${config.getOrThrow('MAIL_FROM_NAME', 'App')}" <${config.getOrThrow('MAIL_FROM')}>`,
+    from: `"${config.getOrThrow('MAIL_FROM_NAME')}" <${config.getOrThrow('MAIL_FROM')}>`,
   },
   template: {
     dir: join(process.cwd(), 'templates'),

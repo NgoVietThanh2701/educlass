@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  InternalServerErrorException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -20,6 +15,8 @@ import { SALT_ROUNDS, SEQUENCE } from './auth.constants';
 import { OtpService } from '@modules/otp/otp.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { UsersService } from '@modules/users/users.service';
+import { AppException } from '@common/exceptions/app.exception';
+import { ErrorCode } from '@common/exceptions/error-codes.exception';
 
 @Injectable()
 export class AuthService {
@@ -35,16 +32,13 @@ export class AuthService {
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
     const { email, fullName, password } = registerDto;
 
-    const existingUser = await this.prisma.user.findUnique({
-      where: {
-        email,
-      },
-      select: {
-        id: true,
-      },
-    });
+    const existingUser = await this.userService.findByEmail(email);
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.CONFLICT,
+        'User with this email already exists',
+      );
     }
 
     try {
@@ -78,26 +72,33 @@ export class AuthService {
       };
     } catch (error) {
       console.error('Error during registration:', error);
-      throw new InternalServerErrorException(
+      throw new AppException(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        ErrorCode.INTERNAL_SERVER_ERROR,
         'An error occurred during registration. Please try again later.',
       );
     }
   }
 
   // Verify OTP
-  async verifyOtp(otp: VerifyOtpDto): Promise<string> {
+  async verifyOtp(otp: VerifyOtpDto): Promise<void> {
     const { email, code, purpose } = otp;
+
+    const user = await this.userService.findByEmail(email);
+    if (!user)
+      throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, 'User not found');
+
     await this.otpService.verifyOtp(email, code, purpose);
 
     switch (purpose) {
       case PurposeOTP.REGISTER:
-        await this.userService.markEmailVerified(email);
+        await this.userService.markEmailVerified(email, user.fullName);
         break;
       case PurposeOTP.RESET_PASSWORD:
         break;
+      default:
+        break;
     }
-
-    return 'OTP verified successfully';
   }
 
   // Login for an existing teacher and student
@@ -111,7 +112,11 @@ export class AuthService {
     });
 
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.UNAUTHORIZED,
+        'Invalid email or password',
+      );
     }
 
     const tokens = await this.generateTokens(user.id, user.userName);

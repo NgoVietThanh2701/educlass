@@ -1,0 +1,13 @@
+// Error code for exception
+export const ErrorCode = {
+  CONFLICT: 'CONFLICT', // 409 (data exists)
+  INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR', // 500
+  BAD_REQUEST: 'BAD_REQUEST', // 400
+  UNAUTHORIZED: 'UNAUTHORIZED', // 401 (Not Login or token failed)
+  FORBIDDEN: 'FORBIDDEN', // 403 // Not permission
+
+  // Custom Error code
+  BAD_REQUEST_OTP_RATE_LIMIT: 'BAD_REQUEST_OTP_RATE_LIMIT',
+  BAD_REQUEST_OTP_ATTEMPT: 'BAD_REQUEST_OTP_ATTEMPT',
+  BAD_REQUEST_OTP_WRONG: 'BAD_REQUEST_OTP_WRONG',
+} as const;

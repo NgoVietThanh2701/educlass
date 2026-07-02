@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { SuccessMessage } from '@common/decorators/message.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -13,6 +14,7 @@ export class AuthController {
   // Register a new teacher
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @SuccessMessage('The teacher has been successfully registered')
   @ApiOperation({
     summary: 'Register a new teacher',
     description: 'Create a new teacher account and returns access and refresh tokens',
@@ -41,10 +43,10 @@ export class AuthController {
   // Verify email after registering
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
+  @SuccessMessage('OTP verified successfully')
   @ApiOperation({
     summary: 'Verify OTP',
-    description:
-      'Verify the OTP sent to the user email. Used for registration, password reset, and other verification purposes.',
+    description: 'Verify the OTP sent to the user email',
   })
   @ApiBody({
     type: VerifyOtpDto,
@@ -52,15 +54,12 @@ export class AuthController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'OTP verified successfully.',
-    schema: {
-      example: 'OTP verified successfully.',
-    },
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid or expired OTP.',
   })
-  async verifyOtp(@Body() verifyDto: VerifyOtpDto): Promise<string> {
+  async verifyOtp(@Body() verifyDto: VerifyOtpDto): Promise<void> {
     return await this.authService.verifyOtp(verifyDto);
   }
 

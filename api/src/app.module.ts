@@ -6,6 +6,8 @@ import { MailModule } from './modules/mail/mail.module';
 import { ConfigModule } from '@nestjs/config';
 import { OtpModule } from './modules/otp/otp.module';
 import { UsersModule } from './modules/users/users.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ResponseInterceptor } from '@common/interceptors/response.interceptor';
 
 @Module({
   imports: [
@@ -18,6 +20,11 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ResponseInterceptor,
+    },
+  ],
 })
 export class AppModule {}

@@ -1,7 +1,10 @@
 import { MailerService } from '@nestjs-modules/mailer';
-import { Injectable, InternalServerErrorException, Logger, OnModuleInit } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MAIL_SUBJECT, MAIL_TEMPLATE } from './mail.constants';
+import { OtpMailContext, WelcomeMailContext } from './mail.type';
+import { AppException } from '@common/exceptions/app.exception';
+import { ErrorCode } from '@common/exceptions/error-codes.exception';
 
 @Injectable()
 export class MailService implements OnModuleInit {
@@ -34,24 +37,31 @@ export class MailService implements OnModuleInit {
    * @param template - tên file template (không cần đuôi .hbs)
    * @param context - dữ liệu truyền vào template
    */
-  async sendMail(
+  async sendMail<T extends object>(
     to: string,
     subject: string,
     template: string,
-    context: Record<string, unknown>,
+    context: T,
   ): Promise<void> {
     try {
       const info = await this.mailerService.sendMail({
         to,
         subject,
         template,
-        context,
+        context: {
+          ...context,
+          currentYear: new Date().getFullYear(),
+        },
       });
       this.logger.log(JSON.stringify(info));
       this.logger.log(`Email sent to ${to} with template "${template}"`);
     } catch (error) {
       console.error('Error during service mail:', error);
-      throw new InternalServerErrorException('Unable to send email');
+      throw new AppException(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        ErrorCode.INTERNAL_SERVER_ERROR,
+        'Unable to send email',
+      );
     }
   }
 
@@ -59,7 +69,7 @@ export class MailService implements OnModuleInit {
    * Gửi email OTP - tiện ích nhanh
    */
   async sendOtpEmail(to: string, otp: string, purpose: string, ttlMinutes: number): Promise<void> {
-    await this.sendMail(to, `${MAIL_SUBJECT.OTP} - ${purpose}`, MAIL_TEMPLATE.OTP, {
+    await this.sendMail<OtpMailContext>(to, `${MAIL_SUBJECT.OTP} - ${purpose}`, MAIL_TEMPLATE.OTP, {
       otp,
       purpose,
       ttl: ttlMinutes,
@@ -70,9 +80,9 @@ export class MailService implements OnModuleInit {
   /**
    * Gửi email chào mừng
    */
-  async sendWelcomeEmail(to: string, userName: string): Promise<void> {
-    await this.sendMail(to, MAIL_SUBJECT.WELCOME, MAIL_TEMPLATE.WELCOME, {
-      userName,
+  async sendWelcomeEmail(to: string, fullName: string): Promise<void> {
+    await this.sendMail<WelcomeMailContext>(to, MAIL_SUBJECT.WELCOME, MAIL_TEMPLATE.WELCOME, {
+      fullName,
       loginUrl: this.appUrl,
     });
   }

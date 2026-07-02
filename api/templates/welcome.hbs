@@ -1,0 +1,89 @@
+<html lang='vi'>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Chào mừng đến với Edu Class</title>
+  </head>
+  <body
+    style='margin:0; padding:0; background-color:#f4f6f8; font-family: Arial, Helvetica, sans-serif;'
+  >
+    <table
+      role='presentation'
+      width='100%'
+      cellpadding='0'
+      cellspacing='0'
+      style='background-color:#f4f6f8; padding: 32px 0;'
+    >
+      <tr>
+        <td align='center'>
+          <table
+            role='presentation'
+            width='600'
+            cellpadding='0'
+            cellspacing='0'
+            style='background-color:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.06);'
+          >
+            <!-- Header -->
+            <tr>
+              <td style='background-color:#2f6fed; padding: 28px 32px;' align='center'>
+                <h1 style='margin:0; color:#ffffff; font-size:22px;'>Edu Class</h1>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style='padding: 32px;'>
+                <h2 style='margin-top:0; color:#1f2937;'>Chào mừng
+                  {{fullName}}! 🎉`</h2>
+                <p style='color:#4b5563; font-size:15px; line-height:1.6;'>
+                  Cảm ơn bạn đã đăng ký tài khoản tại
+                  <strong>Edu Class</strong>. Tài khoản của bạn đã được tạo thành công và sẵn sàng
+                  sử dụng.
+                </p>
+                <p style='color:#4b5563; font-size:15px; line-height:1.6;'>
+                  Hãy bắt đầu khám phá kho khóa học đa dạng và nâng cao kỹ năng của bạn ngay hôm
+                  nay.
+                </p>
+
+                <!-- Button -->
+                <table role='presentation' cellpadding='0' cellspacing='0' style='margin: 28px 0;'>
+                  <tr>
+                    <td style='border-radius:6px; background-color:#2f6fed;'>
+                      <a
+                        href='{{loginUrl}}'
+                        target='_blank'
+                        style='display:inline-block; padding:12px 28px; color:#ffffff; text-decoration:none; font-size:15px; font-weight:bold; border-radius:6px;'
+                      >
+                        Đăng nhập ngay
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style='color:#9ca3af; font-size:13px; line-height:1.6;'>
+                  Nếu nút bên trên không hoạt động, bạn có thể sao chép và dán liên kết sau vào
+                  trình duyệt:<br />
+                  <a
+                    href='{{loginUrl}}'
+                    style='color:#2f6fed; word-break:break-all;'
+                  >{{loginUrl}}</a>
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style='background-color:#f9fafb; padding: 20px 32px; text-align:center;'>
+                <p style='margin:0; color:#9ca3af; font-size:12px;'>
+                  ©
+                  {{currentYear}}
+                  Edu Class. Mọi quyền được bảo lưu.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

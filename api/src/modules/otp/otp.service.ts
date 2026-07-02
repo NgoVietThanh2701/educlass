@@ -1,26 +1,33 @@
 import { MailService } from '@modules/mail/mail.service';
 import { RedisService } from '@modules/redis/redis.service';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
 import {
-  MAX_OTP_ATTEMPTS,
-  OTP_DEFAULT_TTL,
+  MAX_OTP_SEND_ATTEMPTS,
+  MAX_OTP_VERIFY_ATTEMPTS,
   OTP_PREFIX,
   OTP_RATE_LIMIT_PREFIX,
+  OTP_VERIFY_ATTEMPT_PREFIX,
+  SALT_ROUNDS_OTP,
 } from './otp.constant';
 import { PurposeOTP } from '@prisma/client';
+import { AppException } from '@common/exceptions/app.exception';
+import { ErrorCode } from '@common/exceptions/error-codes.exception';
 
 @Injectable()
 export class OtpService {
   private readonly logger = new Logger(OtpService.name);
   private readonly otpTtl: number;
+  private readonly otpRateLimitTtl: number;
 
   constructor(
     private readonly redisService: RedisService,
     private readonly mailService: MailService,
     private readonly configService: ConfigService,
   ) {
-    this.otpTtl = this.configService.get<number>('OTP_TTL', OTP_DEFAULT_TTL);
+    this.otpTtl = Number(this.configService.getOrThrow('OTP_TTL'));
+    this.otpRateLimitTtl = Number(this.configService.getOrThrow('OTP_RATE_LIMIT'));
   }
 
   /**
@@ -37,11 +44,12 @@ export class OtpService {
     return `${OTP_PREFIX}${purpose}:${email}`;
   }
 
-  /**
-   * Tạo key Redis cho rate limit gửi OTP
-   */
   private getRateLimitKey(email: string, purpose: PurposeOTP): string {
     return `${OTP_RATE_LIMIT_PREFIX}${purpose}:${email}`;
+  }
+
+  private getVerifyAttemptKey(email: string, purpose: PurposeOTP): string {
+    return `${OTP_VERIFY_ATTEMPT_PREFIX}${purpose}:${email}`;
   }
 
   /**
@@ -53,23 +61,28 @@ export class OtpService {
     const attempts = await this.redisService.get(rateLimitKey);
     const currentAttempts = attempts ? parseInt(attempts, 10) : 0;
 
-    if (currentAttempts >= MAX_OTP_ATTEMPTS) {
-      throw new BadRequestException(`Bạn đã yêu cầu quá nhiều mã OTP. Vui lòng thử lại sau.`);
+    if (currentAttempts >= MAX_OTP_SEND_ATTEMPTS) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.BAD_REQUEST_OTP_RATE_LIMIT,
+        `Bạn đã yêu cầu quá nhiều mã OTP. Vui lòng thử lại sau.`,
+      );
     }
 
     // Cập nhật rate limit: tăng số lần gửi, nếu chưa có thì set TTL 1 giờ
     if (currentAttempts === 0) {
-      await this.redisService.set(rateLimitKey, '1', 3600); // 1 giờ
+      await this.redisService.set(rateLimitKey, '1', this.otpRateLimitTtl);
     } else {
       await this.redisService.incr(rateLimitKey);
     }
 
     // Tạo OTP
     const otp = this.generateOtp();
+    const otpHash = await bcrypt.hash(otp, SALT_ROUNDS_OTP);
     const otpKey = this.getOtpKey(email, purpose);
 
     // Lưu OTP vào Redis với TTL
-    await this.redisService.set(otpKey, otp, this.otpTtl);
+    await this.redisService.set(otpKey, String(otpHash), this.otpTtl);
 
     // Gửi email
     const purposeLabel = this.getPurposeLabel(purpose);
@@ -83,19 +96,42 @@ export class OtpService {
    */
   async verifyOtp(email: string, code: string, purpose: PurposeOTP): Promise<void> {
     const otpKey = this.getOtpKey(email, purpose);
+    const verifyAttemptKey = this.getVerifyAttemptKey(email, purpose);
     const storedOtp = await this.redisService.get(otpKey);
 
-    if (!storedOtp) {
-      throw new BadRequestException('Mã OTP không tồn tại hoặc đã hết hạn.');
+    // OTP đúng
+    if (storedOtp && (await bcrypt.compare(code, storedOtp))) {
+      await this.redisService.del([otpKey, verifyAttemptKey]);
+      this.logger.log(`OTP verified for ${email} (${purpose})`);
+      return;
     }
 
-    if (storedOtp !== code) {
-      throw new BadRequestException('Mã OTP không chính xác.');
+    // OTP sai
+    const attemptValue = await this.redisService.get(verifyAttemptKey);
+    const currentAttempts = attemptValue ? Number(attemptValue) : 0;
+    const nextAttempts = currentAttempts + 1;
+
+    if (currentAttempts === 0) {
+      // Chỉ tạo key ở lần nhập sai đầu tiên
+      await this.redisService.set(verifyAttemptKey, String(nextAttempts), this.otpTtl);
+    } else {
+      await this.redisService.incr(verifyAttemptKey);
     }
 
-    // Xóa OTP sau khi xác thực thành công để tránh dùng lại
-    await this.redisService.del(otpKey);
-    this.logger.log(`OTP verified for ${email} (${purpose})`);
+    if (nextAttempts >= MAX_OTP_VERIFY_ATTEMPTS) {
+      await this.redisService.del([otpKey, verifyAttemptKey]);
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.BAD_REQUEST_OTP_ATTEMPT,
+        'Bạn đã nhập sai OTP quá nhiều lần. Mã OTP đã bị hủy, vui lòng yêu cầu mã OTP mới.',
+      );
+    }
+
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.BAD_REQUEST_OTP_WRONG,
+      `Mã OTP không chính xác. Bạn còn ${MAX_OTP_VERIFY_ATTEMPTS - nextAttempts} lần thử.`,
+    );
   }
 
   /**
