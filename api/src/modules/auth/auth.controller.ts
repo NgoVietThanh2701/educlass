@@ -1,11 +1,14 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { SuccessMessage } from '@common/decorators/message.decorator';
+import { UserResponseDto } from '@modules/users/dto/user-response.dto';
+import { RefreshTokenGuard } from './guards/refresh-token.guard';
+import { GetUser } from '@common/decorators/get-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -36,12 +39,12 @@ export class AuthController {
     status: HttpStatus.TOO_MANY_REQUESTS,
     description: 'Too many requests. Rate limit exceeded',
   })
-  async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
-    return await this.authService.register(registerDto);
+  async register(@Body() registerDto: RegisterDto): Promise<UserResponseDto> {
+    return this.authService.register(registerDto);
   }
 
   // Verify email after registering
-  @Post('verify-otp')
+  @Post('register/verify-otp')
   @HttpCode(HttpStatus.OK)
   @SuccessMessage('OTP verified successfully')
   @ApiOperation({
@@ -54,18 +57,40 @@ export class AuthController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'OTP verified successfully.',
+    type: AuthResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid or expired OTP.',
   })
-  async verifyOtp(@Body() verifyDto: VerifyOtpDto): Promise<void> {
-    return await this.authService.verifyOtp(verifyDto);
+  async verifyOtpRegister(@Body() verifyDto: VerifyOtpDto): Promise<AuthResponseDto> {
+    return this.authService.verifyOtpRegister(verifyDto);
+  }
+
+  // Resend verify OTP
+  @Post('register/resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @SuccessMessage('OTP resend to email successfully')
+  @ApiOperation({
+    summary: 'Resend OTP',
+    description: 'OTP resent to the user email',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'OTP verified successfully.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid or expired OTP.',
+  })
+  async resendOtpRegister(@Body('email') email: string): Promise<void> {
+    return this.authService.resendOtpRegister(email);
   }
 
   // Login for an existing teacher and student
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @SuccessMessage('Logged in successfully')
   @ApiOperation({
     summary: 'Login for an existing teacher and student',
     description: 'Authenticate a user and returns access and refresh tokens',
@@ -84,6 +109,32 @@ export class AuthController {
     description: 'Too many requests. Rate limit exceeded',
   })
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
-    return await this.authService.login(loginDto);
+    return this.authService.login(loginDto);
+  }
+
+  // Refresh access token
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RefreshTokenGuard)
+  @ApiBearerAuth('JWT-refresh')
+  @ApiOperation({
+    summary: 'Refresh access token',
+    description: 'Generates a new access token using a valid refresh token.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Access token refreshed successfully',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized - invalid or expired refresh token',
+  })
+  @ApiResponse({
+    status: HttpStatus.TOO_MANY_REQUESTS,
+    description: 'Too many requests. Rate limit exceeded',
+  })
+  async refresh(@GetUser('id') userId: string): Promise<AuthResponseDto> {
+    return this.authService.refreshTokens(userId);
   }
 }

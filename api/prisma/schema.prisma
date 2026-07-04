@@ -24,12 +24,6 @@ enum RoleManager {
   MANAGER
 }
 
-enum PurposeOTP {
-  REGISTER
-  RESET_PASSWORD
-  CHANGE_EMAIL
-}
-
 model User {
   id            String    @id @default(uuid())
   email         String?   @unique

@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -6,7 +6,7 @@ import { RegisterDto } from './dto/register.dto';
 import { UserNameUtil } from '@common/utils/username.util';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
-import { PurposeOTP, RoleUser } from '@prisma/client';
+import { RoleUser } from '@prisma/client';
 import { UserMapper } from '@modules/users/mapper/user.mapper';
 import { UserSelect } from '@modules/users/selects/user.select';
 import { AuthResponseDto } from './dto/auth-response.dto';
@@ -16,7 +16,8 @@ import { OtpService } from '@modules/otp/otp.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { UsersService } from '@modules/users/users.service';
 import { AppException } from '@common/exceptions/app.exception';
-import { ErrorCode } from '@common/exceptions/error-codes.exception';
+import { UserResponseDto } from '@modules/users/dto/user-response.dto';
+import { OTP_PURPOSE } from '@common/constants/purpose-otp.constant';
 
 @Injectable()
 export class AuthService {
@@ -29,16 +30,12 @@ export class AuthService {
   ) {}
 
   // Register a new teacher
-  async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
+  async register(registerDto: RegisterDto): Promise<UserResponseDto> {
     const { email, fullName, password } = registerDto;
 
     const existingUser = await this.userService.findByEmail(email);
     if (existingUser) {
-      throw new AppException(
-        HttpStatus.CONFLICT,
-        ErrorCode.CONFLICT,
-        'User with this email already exists',
-      );
+      throw AppException.conflict('User with this email already exists');
     }
 
     try {
@@ -57,67 +54,73 @@ export class AuthService {
           teacherNo,
           userName,
         },
-        select: UserSelect.authUser,
+        select: UserSelect.response,
       });
 
-      const tokens = await this.generateTokens(user.id, user.userName);
-      await this.updateRefreshToken(user.id, tokens.refreshToken);
-
       // Send OTP for user verify
-      await this.otpService.sendOtp(email, PurposeOTP.REGISTER);
+      await this.otpService.sendOtp(email, OTP_PURPOSE.REGISTER);
 
-      return {
-        ...tokens,
-        user: UserMapper.toResponse(user),
-      };
+      return UserMapper.toResponse(user);
     } catch (error) {
       console.error('Error during registration:', error);
-      throw new AppException(
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        ErrorCode.INTERNAL_SERVER_ERROR,
-        'An error occurred during registration. Please try again later.',
-      );
+      throw AppException.internal('An error occurred during registration. Please try again later.');
     }
   }
 
-  // Verify OTP
-  async verifyOtp(otp: VerifyOtpDto): Promise<void> {
-    const { email, code, purpose } = otp;
+  // Refresh access token
+  async refreshTokens(userId: string): Promise<AuthResponseDto> {
+    const user = await this.userService.findById(userId);
+    if (!user) throw AppException.notFound('User not found');
+    const tokens = await this.generateTokens(user.id, user.userName);
+    await this.updateRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      ...tokens,
+      user: UserMapper.toResponse(user),
+    };
+  }
+
+  // Verify OTP for register
+  async verifyOtpRegister(otp: VerifyOtpDto): Promise<AuthResponseDto> {
+    const { email, code } = otp;
 
     const user = await this.userService.findByEmail(email);
-    if (!user)
-      throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, 'User not found');
+    if (!user) throw AppException.notFound('User not found');
 
-    await this.otpService.verifyOtp(email, code, purpose);
+    if (user.emailVerified) throw AppException.badRequest('Email already verified');
 
-    switch (purpose) {
-      case PurposeOTP.REGISTER:
-        await this.userService.markEmailVerified(email, user.fullName);
-        break;
-      case PurposeOTP.RESET_PASSWORD:
-        break;
-      default:
-        break;
-    }
+    await this.otpService.verifyOtp(email, code, OTP_PURPOSE.REGISTER);
+    await this.userService.markEmailVerified(email, user.fullName);
+
+    const tokens = await this.generateTokens(user.id, user.userName);
+    await this.updateRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      ...tokens,
+      user: UserMapper.toResponse(user),
+    };
+  }
+
+  // Resend OTP
+  async resendOtpRegister(email: string): Promise<void> {
+    const user = await this.userService.findByEmail(email);
+    if (!user) throw AppException.notFound('User not found');
+    if (user.emailVerified) throw AppException.badRequest('Email already verified');
+
+    await this.otpService.resendOtp(email, OTP_PURPOSE.REGISTER);
   }
 
   // Login for an existing teacher and student
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const { identifier, password } = loginDto;
 
-    const user = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ email: identifier }, { userName: identifier }],
-      },
-    });
+    const user = await this.userService.findByEmailOrUserName(identifier);
 
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-      throw new AppException(
-        HttpStatus.UNAUTHORIZED,
-        ErrorCode.UNAUTHORIZED,
-        'Invalid email or password',
-      );
+      throw AppException.unauthorized('Invalid credentials');
     }
+
+    if (!user.emailVerified) throw AppException.forbidden('Please verified email');
 
     const tokens = await this.generateTokens(user.id, user.userName);
     await this.updateRefreshToken(user.id, tokens.refreshToken);

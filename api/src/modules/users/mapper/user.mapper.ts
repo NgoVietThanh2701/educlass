@@ -3,7 +3,7 @@ import { UserResponseDto } from '../dto/user-response.dto';
 import { UserSelect } from '../selects/user.select';
 
 type UserResponsePayload = Prisma.UserGetPayload<{
-  select: typeof UserSelect.authUser;
+  select: typeof UserSelect.response;
 }>;
 
 export class UserMapper {

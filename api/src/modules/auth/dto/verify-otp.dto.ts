@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PurposeOTP } from '@prisma/client';
-import { IsEmail, IsEnum, IsString, Length } from 'class-validator';
+import { IsEmail, IsString, Length } from 'class-validator';
 
 export class VerifyOtpDto {
   @ApiProperty({
@@ -19,12 +18,4 @@ export class VerifyOtpDto {
   @IsString()
   @Length(6, 6)
   code: string;
-
-  @ApiProperty({
-    enum: PurposeOTP,
-    example: PurposeOTP.REGISTER,
-    description: 'Mục đích sử dụng OTP',
-  })
-  @IsEnum(PurposeOTP)
-  purpose: PurposeOTP;
 }

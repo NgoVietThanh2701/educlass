@@ -9,9 +9,6 @@ async function bootstrap() {
   // Set global prefix for all routes
   app.setGlobalPrefix('api/v1');
 
-  // Set interceptor global for response
-  //app.useGlobalInterceptors(new ResponseInterceptor());
-
   // Set Global validation
   app.useGlobalPipes(
     new ValidationPipe({

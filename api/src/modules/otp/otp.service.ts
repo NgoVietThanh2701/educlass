@@ -1,19 +1,18 @@
 import { MailService } from '@modules/mail/mail.service';
 import { RedisService } from '@modules/redis/redis.service';
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import {
-  MAX_OTP_SEND_ATTEMPTS,
+  KEY_OTP_PREFIX,
+  KeyOtpPrefix,
+  MAX_OTP_RATE_LIMIT,
   MAX_OTP_VERIFY_ATTEMPTS,
-  OTP_PREFIX,
-  OTP_RATE_LIMIT_PREFIX,
-  OTP_VERIFY_ATTEMPT_PREFIX,
   SALT_ROUNDS_OTP,
 } from './otp.constant';
-import { PurposeOTP } from '@prisma/client';
 import { AppException } from '@common/exceptions/app.exception';
 import { ErrorCode } from '@common/exceptions/error-codes.exception';
+import { OTP_PURPOSE, OtpPurposeType } from '@common/constants/purpose-otp.constant';
 
 @Injectable()
 export class OtpService {
@@ -40,116 +39,116 @@ export class OtpService {
   /**
    * Tạo key Redis cho OTP
    */
-  private getOtpKey(email: string, purpose: PurposeOTP): string {
-    return `${OTP_PREFIX}${purpose}:${email}`;
-  }
 
-  private getRateLimitKey(email: string, purpose: PurposeOTP): string {
-    return `${OTP_RATE_LIMIT_PREFIX}${purpose}:${email}`;
-  }
-
-  private getVerifyAttemptKey(email: string, purpose: PurposeOTP): string {
-    return `${OTP_VERIFY_ATTEMPT_PREFIX}${purpose}:${email}`;
+  private getOtpKey(email: string, purpose: OtpPurposeType, prefix: KeyOtpPrefix): string {
+    return `${prefix}${purpose}:${email}`;
   }
 
   /**
    * Gửi OTP qua email
    */
-  async sendOtp(email: string, purpose: PurposeOTP): Promise<void> {
-    // Kiểm tra rate limit
-    const rateLimitKey = this.getRateLimitKey(email, purpose);
-    const attempts = await this.redisService.get(rateLimitKey);
-    const currentAttempts = attempts ? parseInt(attempts, 10) : 0;
+  async sendOtp(email: string, purpose: OtpPurposeType): Promise<void> {
+    // Get key
+    const otpKey = this.getOtpKey(email, purpose, KEY_OTP_PREFIX.OTP);
+    const rateLimitKey = this.getOtpKey(email, purpose, KEY_OTP_PREFIX.OTP_RATE_LIMIT);
+    const verifyAttemptKey = this.getOtpKey(email, purpose, KEY_OTP_PREFIX.OTP_VERIFY_ATTEMPT);
 
-    if (currentAttempts >= MAX_OTP_SEND_ATTEMPTS) {
-      throw new AppException(
-        HttpStatus.BAD_REQUEST,
+    const attempts = await this.redisService.incr(rateLimitKey); // 1
+    if (attempts === 1) {
+      await this.redisService.expire(rateLimitKey, this.otpRateLimitTtl);
+    }
+
+    if (attempts > MAX_OTP_RATE_LIMIT) {
+      throw AppException.badRequest(
+        'Bạn đã yêu cầu quá nhiều mã OTP. Vui lòng thử lại sau.',
         ErrorCode.BAD_REQUEST_OTP_RATE_LIMIT,
-        `Bạn đã yêu cầu quá nhiều mã OTP. Vui lòng thử lại sau.`,
       );
     }
 
-    // Cập nhật rate limit: tăng số lần gửi, nếu chưa có thì set TTL 1 giờ
-    if (currentAttempts === 0) {
-      await this.redisService.set(rateLimitKey, '1', this.otpRateLimitTtl);
-    } else {
-      await this.redisService.incr(rateLimitKey);
+    try {
+      const otp = this.generateOtp();
+      const otpHash = await bcrypt.hash(otp, SALT_ROUNDS_OTP);
+
+      // OTP mới => reset số lần nhập sai
+      await this.redisService.del(verifyAttemptKey);
+      await this.redisService.set(otpKey, String(otpHash), this.otpTtl);
+      // Gửi email
+      const purposeLabel = this.getPurposeLabel(purpose);
+      await this.mailService.sendOtpEmail(email, otp, purposeLabel, this.otpTtl / 60);
+
+      this.logger.log(`OTP sent to ${email} for ${purpose}`);
+    } catch (error) {
+      // Rollback OTP nếu gửi mail thất bại
+      await Promise.all([
+        this.redisService.del([otpKey, verifyAttemptKey]),
+        this.redisService.decr(rateLimitKey),
+      ]);
+      throw error;
     }
-
-    // Tạo OTP
-    const otp = this.generateOtp();
-    const otpHash = await bcrypt.hash(otp, SALT_ROUNDS_OTP);
-    const otpKey = this.getOtpKey(email, purpose);
-
-    // Lưu OTP vào Redis với TTL
-    await this.redisService.set(otpKey, String(otpHash), this.otpTtl);
-
-    // Gửi email
-    const purposeLabel = this.getPurposeLabel(purpose);
-    await this.mailService.sendOtpEmail(email, otp, purposeLabel, this.otpTtl / 60);
-
-    this.logger.log(`OTP sent to ${email} for ${purpose}`);
   }
 
   /**
    * Xác thực OTP
    */
-  async verifyOtp(email: string, code: string, purpose: PurposeOTP): Promise<void> {
-    const otpKey = this.getOtpKey(email, purpose);
-    const verifyAttemptKey = this.getVerifyAttemptKey(email, purpose);
+  async verifyOtp(email: string, code: string, purpose: OtpPurposeType): Promise<void> {
+    const otpKey = this.getOtpKey(email, purpose, KEY_OTP_PREFIX.OTP);
+    const verifyAttemptKey = this.getOtpKey(email, purpose, KEY_OTP_PREFIX.OTP_VERIFY_ATTEMPT);
+
+    // 1. check OTP
     const storedOtp = await this.redisService.get(otpKey);
 
-    // OTP đúng
-    if (storedOtp && (await bcrypt.compare(code, storedOtp))) {
+    if (!storedOtp) {
+      // Dọn luôn attempt nếu còn sót
+      await this.redisService.del(verifyAttemptKey);
+      throw AppException.badRequest(
+        'Mã OTP đã hết hạn. Vui lòng yêu cầu mã OTP mới.',
+        ErrorCode.BAD_REQUEST_OTP_RESEND,
+      );
+    }
+
+    // 2. OTP đúng
+    if (await bcrypt.compare(code, storedOtp)) {
       await this.redisService.del([otpKey, verifyAttemptKey]);
       this.logger.log(`OTP verified for ${email} (${purpose})`);
       return;
     }
 
-    // OTP sai
-    const attemptValue = await this.redisService.get(verifyAttemptKey);
-    const currentAttempts = attemptValue ? Number(attemptValue) : 0;
-    const nextAttempts = currentAttempts + 1;
+    // 3. OTP sai -> tăng số lần thử
+    const attempts = await this.redisService.incr(verifyAttemptKey);
 
-    if (currentAttempts === 0) {
-      // Chỉ tạo key ở lần nhập sai đầu tiên
-      await this.redisService.set(verifyAttemptKey, String(nextAttempts), this.otpTtl);
-    } else {
-      await this.redisService.incr(verifyAttemptKey);
+    // Chỉ set TTL ở lần tạo đầu tiên
+    if (attempts === 1) {
+      await this.redisService.expire(verifyAttemptKey, this.otpTtl);
     }
 
-    if (nextAttempts >= MAX_OTP_VERIFY_ATTEMPTS) {
+    if (attempts >= MAX_OTP_VERIFY_ATTEMPTS) {
       await this.redisService.del([otpKey, verifyAttemptKey]);
-      throw new AppException(
-        HttpStatus.BAD_REQUEST,
-        ErrorCode.BAD_REQUEST_OTP_ATTEMPT,
+      throw AppException.badRequest(
         'Bạn đã nhập sai OTP quá nhiều lần. Mã OTP đã bị hủy, vui lòng yêu cầu mã OTP mới.',
+        ErrorCode.BAD_REQUEST_OTP_RESEND,
       );
     }
 
-    throw new AppException(
-      HttpStatus.BAD_REQUEST,
+    throw AppException.badRequest(
+      `Mã OTP không chính xác. Bạn còn ${MAX_OTP_VERIFY_ATTEMPTS - attempts} lần thử.`,
       ErrorCode.BAD_REQUEST_OTP_WRONG,
-      `Mã OTP không chính xác. Bạn còn ${MAX_OTP_VERIFY_ATTEMPTS - nextAttempts} lần thử.`,
     );
   }
 
   /**
    * Cho phép gửi lại OTP (gọi lại sendOtp nhưng có thể reset rate limit nếu muốn)
    */
-  async resendOtp(email: string, purpose: PurposeOTP): Promise<void> {
-    // Có thể xóa rate limit cũ trước khi gọi sendOtp, hoặc giữ nguyên
-    // Ở đây giữ nguyên để rate limit vẫn áp dụng
+  async resendOtp(email: string, purpose: OtpPurposeType): Promise<void> {
     await this.sendOtp(email, purpose);
   }
 
-  private getPurposeLabel(purpose: PurposeOTP): string {
+  private getPurposeLabel(purpose: OtpPurposeType): string {
     switch (purpose) {
-      case PurposeOTP.REGISTER:
+      case OTP_PURPOSE.REGISTER:
         return 'đăng ký tài khoản';
-      case PurposeOTP.RESET_PASSWORD:
+      case OTP_PURPOSE.RESET_PASSWORD:
         return 'đặt lại mật khẩu';
-      case PurposeOTP.CHANGE_EMAIL:
+      case OTP_PURPOSE.CHANGE_EMAIL:
         return 'thay đổi email';
       default:
         return '';

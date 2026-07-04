@@ -1,10 +1,9 @@
 import { MailerService } from '@nestjs-modules/mailer';
-import { HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MAIL_SUBJECT, MAIL_TEMPLATE } from './mail.constants';
 import { OtpMailContext, WelcomeMailContext } from './mail.type';
 import { AppException } from '@common/exceptions/app.exception';
-import { ErrorCode } from '@common/exceptions/error-codes.exception';
 
 @Injectable()
 export class MailService implements OnModuleInit {
@@ -57,11 +56,7 @@ export class MailService implements OnModuleInit {
       this.logger.log(`Email sent to ${to} with template "${template}"`);
     } catch (error) {
       console.error('Error during service mail:', error);
-      throw new AppException(
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        ErrorCode.INTERNAL_SERVER_ERROR,
-        'Unable to send email',
-      );
+      throw AppException.internal('Unable to send email');
     }
   }
 

@@ -26,3 +26,7 @@ INCREMENT BY 1
 NO MINVALUE
 NO MAXVALUE
 CACHE 1;
+
+-- Check docke redis
+docker exec -it educlass-redis redis-cli
+keys \*
