@@ -14,6 +14,7 @@ export class UserMapper {
       userName: user.userName,
       fullName: user.fullName,
       balance: user.balance.toNumber(),
+      mustChangePassword: user.mustChangePassword,
       role: user.role,
       createdAt: user.createdAt,
     };

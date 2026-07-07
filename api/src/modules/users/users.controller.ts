@@ -14,6 +14,7 @@ import { RolesUserGuard } from '@common/guards/role-user.guard';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  // Get current profile
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
   @SuccessMessage('User profile retrieved successfully')
@@ -27,5 +28,6 @@ export class UsersController {
     return this.usersService.getCurrentProfile(req.user.id);
   }
 
-  tao user student
+  // create student (only TEACHER)
+  //@post('students')
 }

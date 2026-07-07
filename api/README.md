@@ -1,4 +1,5 @@
 // statement setup database
+npx prisma migrate reset
 npx prisma migrate dev --create-only --name init-project
 add sequence to migration.sql
 npx prisma migrate dev
@@ -30,3 +31,6 @@ CACHE 1;
 -- Check docke redis
 docker exec -it educlass-redis redis-cli
 keys \*
+
+-- create dbml from model
+db2dbml postgres "connection string db" > prisma/schema.dbml

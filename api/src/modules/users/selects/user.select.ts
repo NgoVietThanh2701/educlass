@@ -6,6 +6,7 @@ export const UserSelect = {
     email: true,
     userName: true,
     fullName: true,
+    mustChangePassword: true,
     role: true,
     balance: true,
     createdAt: true,
