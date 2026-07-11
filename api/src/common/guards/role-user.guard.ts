@@ -1,4 +1,5 @@
 import { ROLES_USER_KEY } from '@common/decorators/roles.decorator';
+import { AppException } from '@common/exceptions/app.exception';
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RoleUser } from '@prisma/client';
@@ -18,6 +19,10 @@ export class RolesUserGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest();
-    return requiredRoles.some((role) => user.role === role);
+    const hasRole = requiredRoles.some((role) => role === user.role);
+    if (!hasRole) {
+      throw AppException.forbidden('Not permission');
+    }
+    return true;
   }
 }

@@ -7,7 +7,6 @@ import { Injectable } from '@nestjs/common';
 import * as bycrypt from 'bcrypt';
 import { PrismaService } from '@prisma/prisma.service';
 import { AppException } from '@common/exceptions/app.exception';
-import { UserSelect } from '@modules/users/selects/user.select';
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
@@ -40,7 +39,6 @@ export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refres
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      select: UserSelect.full,
     });
 
     if (!user || !user.refreshToken) {

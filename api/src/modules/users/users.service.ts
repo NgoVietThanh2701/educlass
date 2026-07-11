@@ -1,10 +1,9 @@
 import { MailService } from '@modules/mail/mail.service';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
-import { UserSelect } from './selects/user.select';
 import { AppException } from '@common/exceptions/app.exception';
-import { UserMapper } from './mapper/user.mapper';
 import { UserResponseDto } from './dto/user-response.dto';
+import { toUserResponse } from './user.mapper';
 
 @Injectable()
 export class UsersService {
@@ -17,14 +16,13 @@ export class UsersService {
   async getCurrentProfile(userId: string): Promise<UserResponseDto> {
     const user = await this.findById(userId);
     if (!user) throw AppException.notFound('User not found');
-    return UserMapper.toResponse(user);
+    return toUserResponse(user);
   }
 
   // Find user by email
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email },
-      select: UserSelect.full,
     });
   }
 
@@ -32,7 +30,6 @@ export class UsersService {
   async findById(userId: string) {
     return this.prisma.user.findUnique({
       where: { id: userId },
-      select: UserSelect.full,
     });
   }
 
@@ -42,7 +39,6 @@ export class UsersService {
       where: {
         OR: [{ email: identifier }, { userName: identifier }],
       },
-      select: UserSelect.full,
     });
   }
 

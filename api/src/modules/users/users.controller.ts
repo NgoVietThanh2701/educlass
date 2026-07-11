@@ -24,7 +24,7 @@ export class UsersController {
     type: UserResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getProfile(@Req() req: RequestWithUser): Promise<UserResponseDto> {
+  getProfile(@Req() req: RequestWithUser): Promise<UserResponseDto> {
     return this.usersService.getCurrentProfile(req.user.id);
   }
 

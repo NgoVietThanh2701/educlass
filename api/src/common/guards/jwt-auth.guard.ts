@@ -1,15 +1,15 @@
 // Jwt auth guard
-import { ExecutionContext, Injectable } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+import { AppException } from '@common/exceptions/app.exception';
+import { Injectable } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  constructor(private reflector: Reflector) {
-    super();
-  }
+  handleRequest(err: unknown, user: any) {
+    if (err || !user) {
+      throw AppException.unauthorized('Token is missing or invalid');
+    }
 
-  canActivate(context: ExecutionContext) {
-    return super.canActivate(context);
+    return user;
   }
 }

@@ -7,8 +7,6 @@ import { UserNameUtil } from '@common/utils/username.util';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { RoleUser } from '@prisma/client';
-import { UserMapper } from '@modules/users/mapper/user.mapper';
-import { UserSelect } from '@modules/users/selects/user.select';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { SALT_ROUNDS, SEQUENCE } from './auth.constants';
@@ -18,6 +16,7 @@ import { UsersService } from '@modules/users/users.service';
 import { AppException } from '@common/exceptions/app.exception';
 import { UserResponseDto } from '@modules/users/dto/user-response.dto';
 import { OTP_PURPOSE } from '@common/constants/purpose-otp.constant';
+import { toUserResponse, userSelect } from '@modules/users/user.mapper';
 
 @Injectable()
 export class AuthService {
@@ -54,13 +53,13 @@ export class AuthService {
           teacherNo,
           userName,
         },
-        select: UserSelect.response,
+        select: userSelect,
       });
 
       // Send OTP for user verify
       await this.otpService.sendOtp(email, OTP_PURPOSE.REGISTER);
 
-      return UserMapper.toResponse(user);
+      return toUserResponse(user);
     } catch (error) {
       console.error('Error during registration:', error);
       throw AppException.internal('An error occurred during registration. Please try again later.');
@@ -76,7 +75,7 @@ export class AuthService {
 
     return {
       ...tokens,
-      user: UserMapper.toResponse(user),
+      user: toUserResponse(user),
     };
   }
 
@@ -97,7 +96,7 @@ export class AuthService {
 
     return {
       ...tokens,
-      user: UserMapper.toResponse(user),
+      user: toUserResponse(user),
     };
   }
 
@@ -127,7 +126,7 @@ export class AuthService {
 
     return {
       ...tokens,
-      user: UserMapper.toResponse(user),
+      user: toUserResponse(user),
     };
   }
 

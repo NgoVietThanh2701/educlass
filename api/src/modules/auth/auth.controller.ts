@@ -39,7 +39,7 @@ export class AuthController {
     status: HttpStatus.TOO_MANY_REQUESTS,
     description: 'Too many requests. Rate limit exceeded',
   })
-  async register(@Body() registerDto: RegisterDto): Promise<UserResponseDto> {
+  register(@Body() registerDto: RegisterDto): Promise<UserResponseDto> {
     return this.authService.register(registerDto);
   }
 
@@ -63,7 +63,7 @@ export class AuthController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid or expired OTP.',
   })
-  async verifyOtpRegister(@Body() verifyDto: VerifyOtpDto): Promise<AuthResponseDto> {
+  verifyOtpRegister(@Body() verifyDto: VerifyOtpDto): Promise<AuthResponseDto> {
     return this.authService.verifyOtpRegister(verifyDto);
   }
 
@@ -83,7 +83,7 @@ export class AuthController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid or expired OTP.',
   })
-  async resendOtpRegister(@Body('email') email: string): Promise<void> {
+  resendOtpRegister(@Body('email') email: string): Promise<void> {
     return this.authService.resendOtpRegister(email);
   }
 
@@ -108,7 +108,7 @@ export class AuthController {
     status: HttpStatus.TOO_MANY_REQUESTS,
     description: 'Too many requests. Rate limit exceeded',
   })
-  async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
+  login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.login(loginDto);
   }
 
@@ -134,7 +134,7 @@ export class AuthController {
     status: HttpStatus.TOO_MANY_REQUESTS,
     description: 'Too many requests. Rate limit exceeded',
   })
-  async refresh(@GetUser('id') userId: string): Promise<AuthResponseDto> {
+  refresh(@GetUser('id') userId: string): Promise<AuthResponseDto> {
     return this.authService.refreshTokens(userId);
   }
 }
