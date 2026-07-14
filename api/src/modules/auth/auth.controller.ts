@@ -8,7 +8,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { SuccessMessage } from '@common/decorators/message.decorator';
 import { UserResponseDto } from '@modules/users/dto/user-response.dto';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
-import { GetUser } from '@common/decorators/get-user.decorator';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -134,7 +134,7 @@ export class AuthController {
     status: HttpStatus.TOO_MANY_REQUESTS,
     description: 'Too many requests. Rate limit exceeded',
   })
-  refresh(@GetUser('id') userId: string): Promise<AuthResponseDto> {
+  refresh(@CurrentUser('id') userId: string): Promise<AuthResponseDto> {
     return this.authService.refreshTokens(userId);
   }
 }

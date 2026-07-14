@@ -27,18 +27,16 @@ export class UsersService {
   }
 
   //Find user by id
-  async findById(userId: string) {
+  findById(userId: string) {
     return this.prisma.user.findUnique({
       where: { id: userId },
     });
   }
 
   // Find user by email or username
-  async findByEmailOrUserName(identifier: string) {
-    return this.prisma.user.findFirst({
-      where: {
-        OR: [{ email: identifier }, { userName: identifier }],
-      },
+  findByUserName(userName: string) {
+    return this.prisma.user.findUnique({
+      where: { userName },
     });
   }
 

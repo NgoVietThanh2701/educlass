@@ -48,10 +48,9 @@ export class AuthService {
         data: {
           email,
           fullName,
+          userName,
           passwordHash,
           role: RoleUser.TEACHER,
-          teacherNo,
-          userName,
         },
         select: userSelect,
       });
@@ -84,7 +83,7 @@ export class AuthService {
     const { email, code } = otp;
 
     const user = await this.userService.findByEmail(email);
-    if (!user) throw AppException.notFound('User not found');
+    if (!user || user.archivedAt) throw AppException.notFound('User not found or disabled');
 
     if (user.emailVerified) throw AppException.badRequest('Email already verified');
 
@@ -103,7 +102,7 @@ export class AuthService {
   // Resend OTP
   async resendOtpRegister(email: string): Promise<void> {
     const user = await this.userService.findByEmail(email);
-    if (!user) throw AppException.notFound('User not found');
+    if (!user || user.archivedAt) throw AppException.notFound('User not found or disabled');
     if (user.emailVerified) throw AppException.badRequest('Email already verified');
 
     await this.otpService.resendOtp(email, OTP_PURPOSE.REGISTER);
@@ -113,13 +112,18 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const { identifier, password } = loginDto;
 
-    const user = await this.userService.findByEmailOrUserName(identifier);
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: identifier }, { userName: identifier }],
+      },
+    });
 
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       throw AppException.unauthorized('Invalid credentials');
     }
 
-    if (!user.emailVerified) throw AppException.forbidden('Please verified email');
+    if ((!user.emailVerified && user.role === RoleUser.TEACHER) || user.archivedAt)
+      throw AppException.forbidden('Please verified email or user is disabled');
 
     const tokens = await this.generateTokens(user.id, user.userName);
     await this.updateRefreshToken(user.id, tokens.refreshToken);

@@ -1,11 +1,11 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserResponseDto } from './dto/user-response.dto';
 import { UsersService } from './users.service';
-import type { RequestWithUser } from '@common/interfaces/request.interface';
 import { SuccessMessage } from '@common/decorators/message.decorator';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { RolesUserGuard } from '@common/guards/role-user.guard';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
@@ -24,8 +24,8 @@ export class UsersController {
     type: UserResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  getProfile(@Req() req: RequestWithUser): Promise<UserResponseDto> {
-    return this.usersService.getCurrentProfile(req.user.id);
+  getProfile(@CurrentUser('id') userId: string): Promise<UserResponseDto> {
+    return this.usersService.getCurrentProfile(userId);
   }
 
   // create student (only TEACHER)
