@@ -8,10 +8,10 @@ generator client {
   //output   = "../src/generated/prisma"
 }
 
-generator dbml {
-  provider = "prisma-dbml-generator"
-   output   = "./dbml"
-}
+// generator dbml {
+//   provider = "prisma-dbml-generator"
+//    output   = "./dbml"
+// }
 
 datasource db {
   provider = "postgresql"

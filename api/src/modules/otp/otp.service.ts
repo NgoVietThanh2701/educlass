@@ -100,10 +100,7 @@ export class OtpService {
     if (!storedOtp) {
       // Dọn luôn attempt nếu còn sót
       await this.redisService.del(verifyAttemptKey);
-      throw AppException.badRequest(
-        'Mã OTP đã hết hạn. Vui lòng yêu cầu mã OTP mới.',
-        ErrorCode.BAD_REQUEST_OTP_RESEND,
-      );
+      throw AppException.badRequest('Please resent OTP', ErrorCode.BAD_REQUEST_OTP_RESEND);
     }
 
     // 2. OTP đúng

@@ -36,7 +36,6 @@ export function toClassResponse(data: ClassWithRelations): ClassResponseDto {
 
 export const classDetailSelect = Prisma.validator<Prisma.ClassSelect>()({
   ...classSelect,
-  teacherId: true,
   classStudents: {
     select: {
       joinedAt: true,

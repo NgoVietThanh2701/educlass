@@ -103,7 +103,7 @@ export class ClassService {
     const cls = await this.findClassOrThrow(classId, classDetailSelect);
     switch (role) {
       case RoleUser.TEACHER:
-        this.ensureTeacherOwnsClass(cls.teacherId, userId);
+        this.ensureTeacherOwnsClass(cls.teacher.id, userId);
         break;
 
       case RoleUser.STUDENT:

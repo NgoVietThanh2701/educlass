@@ -9,10 +9,14 @@ import { UsersModule } from './modules/users/users.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ResponseInterceptor } from '@common/interceptors/response.interceptor';
 import { ClassModule } from './modules/class/class.module';
+import { ExamsModule } from './modules/exams/exams.module';
+import { ExamSessionModule } from './modules/exam-session/exam-session.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    ScheduleModule.forRoot(),
     AuthModule,
     PrismaModule,
     RedisModule,
@@ -20,6 +24,8 @@ import { ClassModule } from './modules/class/class.module';
     OtpModule,
     UsersModule,
     ClassModule,
+    ExamsModule,
+    ExamSessionModule,
   ],
   controllers: [],
   providers: [

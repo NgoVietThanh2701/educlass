@@ -4,7 +4,7 @@ import { AuthResponseDto } from './dto/auth-response.dto';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { ResendOtpDto, VerifyOtpDto } from './dto/verify-otp.dto';
 import { SuccessMessage } from '@common/decorators/message.decorator';
 import { UserResponseDto } from '@modules/users/dto/user-response.dto';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
@@ -83,8 +83,8 @@ export class AuthController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid or expired OTP.',
   })
-  resendOtpRegister(@Body('email') email: string): Promise<void> {
-    return this.authService.resendOtpRegister(email);
+  resendOtpRegister(@Body() body: ResendOtpDto): Promise<void> {
+    return this.authService.resendOtpRegister(body.email);
   }
 
   // Login for an existing teacher and student

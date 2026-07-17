@@ -150,7 +150,6 @@ export class ClassController {
   // Remove student from class (Only Teacher)
   @Delete(':id/students/:studentId')
   @RolesUser(RoleUser.TEACHER)
-  @HttpCode(HttpStatus.NO_CONTENT)
   @SuccessMessage('Removed student successfully')
   @ApiOperation({ summary: 'Remove student from class (Only teacher)' })
   @ApiResponse({
@@ -172,11 +171,9 @@ export class ClassController {
   // Student leave class
   @Delete(':id/leave')
   @RolesUser(RoleUser.STUDENT)
-  @HttpCode(HttpStatus.NO_CONTENT)
   @SuccessMessage('Left class successfully')
   @ApiOperation({ summary: 'Leave class (Only student)' })
   @ApiResponse({
-    status: HttpStatus.NO_CONTENT,
     description: 'Left class successfully',
   })
   @ApiResponse({

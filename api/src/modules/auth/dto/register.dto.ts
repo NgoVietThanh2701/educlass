@@ -3,7 +3,7 @@ import { IsEmail, IsNotEmpty, MinLength, MaxLength, IsString, Matches } from 'cl
 
 export class RegisterDto {
   @ApiProperty({
-    example: 'teacher@example.com',
+    example: 'nvthanh.19it6@sict.udn.vn',
     description: 'Email đăng ký',
   })
   @IsString()

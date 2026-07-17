@@ -38,8 +38,6 @@ CREATE TABLE "users" (
     "balance" DECIMAL(10,2) NOT NULL DEFAULT 0,
     "role" "RoleUser" NOT NULL DEFAULT 'TEACHER',
     "refreshToken" TEXT,
-    "studentNo" INTEGER,
-    "teacherNo" INTEGER,
     "mustChangePassword" BOOLEAN NOT NULL DEFAULT false,
     "emailVerified" BOOLEAN NOT NULL DEFAULT false,
     "archivedAt" TIMESTAMP(3),
@@ -159,12 +157,6 @@ CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_userName_key" ON "users"("userName");
-
--- CreateIndex
-CREATE UNIQUE INDEX "users_studentNo_key" ON "users"("studentNo");
-
--- CreateIndex
-CREATE UNIQUE INDEX "users_teacherNo_key" ON "users"("teacherNo");
 
 -- CreateIndex
 CREATE INDEX "users_role_idx" ON "users"("role");

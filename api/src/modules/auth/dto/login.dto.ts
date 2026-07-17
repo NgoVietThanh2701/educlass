@@ -4,11 +4,11 @@ import { IsNotEmpty, IsString } from 'class-validator';
 export class LoginDto {
   @ApiProperty({
     description: 'Email hoặc Username',
-    example: 'john@example.com',
+    example: 'nvthanh.19it6@sict.udn.vn',
     examples: {
       email: {
         summary: 'Đăng nhập bằng email',
-        value: 'john@example.com',
+        value: 'nvthanh.19it6@sict.udn.vn',
       },
       username: {
         summary: 'Đăng nhập bằng username',

@@ -11,6 +11,7 @@ export const ErrorCode = {
   BAD_REQUEST_OTP_RATE_LIMIT: 'BAD_REQUEST_OTP_RATE_LIMIT',
   BAD_REQUEST_OTP_RESEND: 'BAD_REQUEST_OTP_RESEND',
   BAD_REQUEST_OTP_WRONG: 'BAD_REQUEST_OTP_WRONG',
+  BAD_REQUEST_EXAM_STATUS: 'BAD_REQUEST_EXAM_STATUS',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];

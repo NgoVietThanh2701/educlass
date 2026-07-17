@@ -3,7 +3,7 @@ import { IsEmail, IsString, Length } from 'class-validator';
 
 export class VerifyOtpDto {
   @ApiProperty({
-    example: 'user@example.com',
+    example: 'nvthanh.19it6@sict.udn.vn',
     description: 'Email cần xác thực',
   })
   @IsEmail()
@@ -18,4 +18,12 @@ export class VerifyOtpDto {
   @IsString()
   @Length(6, 6)
   code: string;
+}
+
+export class ResendOtpDto {
+  @ApiProperty({
+    example: 'nvthanh.19it6@sict.udn.vn',
+  })
+  @IsEmail()
+  email: string;
 }
