@@ -118,6 +118,7 @@ CREATE TABLE "exam_sessions" (
     "classId" TEXT NOT NULL,
     "name" TEXT,
     "startAt" TIMESTAMP(3) NOT NULL,
+    "endAt" TIMESTAMP(3) NOT NULL,
     "sessionDelayMinutes" INTEGER NOT NULL DEFAULT 0,
     "status" "ExamSessionStatus" NOT NULL DEFAULT 'SCHEDULED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

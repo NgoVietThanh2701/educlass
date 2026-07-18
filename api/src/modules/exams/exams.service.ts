@@ -102,7 +102,7 @@ export class ExamsService {
         where: { id: examId },
         data: {
           status: newStatus,
-          archivedAt: currentStatus === ExamStatus.ARCHIVED ? null : new Date(),
+          archivedAt: newStatus === ExamStatus.ARCHIVED ? new Date() : null,
         },
         select: examSelect,
       });

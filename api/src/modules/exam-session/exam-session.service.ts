@@ -6,6 +6,7 @@ import { CreateExamSessionDto } from './dto/create-exam-session.dto';
 import { AppException } from '@common/exceptions/app.exception';
 import { UpdateExamSessionDto } from './dto/update-exam-session.dto';
 import { ExamSessionResponseDto } from './dto/exam-session-response.dto';
+import { PrismaErrorCode } from '@common/constants/prisma-error.constant';
 
 @Injectable()
 export class ExamSessionService {
@@ -15,7 +16,7 @@ export class ExamSessionService {
   async create(teacherId: string, dto: CreateExamSessionDto): Promise<ExamSessionResponseDto> {
     return this.prisma.$transaction(async (tx) => {
       // Kiểm tra exam tồn tại, thuộc teacher, đang PUBLISHED
-      await this.ensureExamPublished(dto.examId, teacherId, tx);
+      const exam = await this.ensureExamPublished(dto.examId, teacherId, tx);
       // Kiểm tra class tồn tại, thuộc teacher, chưa archive
       await this.ensureClassOwnership(dto.classId, teacherId, tx);
 
@@ -24,20 +25,35 @@ export class ExamSessionService {
         throw AppException.badRequest('Start time must > current time');
       }
 
-      // Tạo session
-      const session = await tx.examSession.create({
-        data: {
-          examId: dto.examId,
-          classId: dto.classId,
-          name: dto.name,
-          startAt: dto.startAt,
-          sessionDelayMinutes: dto.sessionDelayMinutes ?? 0,
-          status: ExamSessionStatus.SCHEDULED,
-        },
-        select: examSessionSelect,
-      });
+      const delay = dto.sessionDelayMinutes ?? 0;
+      const endAt = new Date(dto.startAt.getTime() + (exam.duration + delay) * 60000);
 
-      return toExamSessionResponse(session);
+      // Tạo session
+      try {
+        const session = await tx.examSession.create({
+          data: {
+            examId: dto.examId,
+            classId: dto.classId,
+            name: dto.name,
+            startAt: dto.startAt,
+            endAt,
+            sessionDelayMinutes: delay,
+            status: ExamSessionStatus.SCHEDULED,
+          },
+          select: examSessionSelect,
+        });
+        return toExamSessionResponse(session);
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === PrismaErrorCode.UNIQUE_CONSTRAINT_VIOLATION
+        ) {
+          throw AppException.conflict(
+            'An exam session with the same exame, class and start time already exists',
+          );
+        }
+        throw error;
+      }
     });
   }
 
@@ -87,7 +103,7 @@ export class ExamSessionService {
       const isMember = await this.prisma.classStudent.findUnique({
         where: {
           classId_studentId: {
-            classId: session.classId,
+            classId: session.class.id,
             studentId: userId,
           },
         },
@@ -108,22 +124,26 @@ export class ExamSessionService {
       const session = await this.ensureSessionExists(sessionId, tx);
       this.ensureTeacherOwnership(session.class.teacherId, teacherId);
 
-      // Chỉ cho phép sửa khi chưa CLOSED
-      if (session.status === ExamSessionStatus.CLOSED) {
-        throw AppException.badRequest('Dont update session with status is close');
+      if (session.status !== ExamSessionStatus.SCHEDULED) {
+        throw AppException.badRequest('Only scheduled sessions can be updated.');
       }
 
+      const newStartAt = dto.startAt ?? session.startAt;
       // Nếu cập nhật startAt, kiểm tra thời gian tương lai
-      if (dto.startAt && dto.startAt <= new Date()) {
+      if (dto.startAt && newStartAt <= new Date()) {
         throw AppException.badRequest('StartAt must > current time');
       }
+
+      const newDelay = dto.sessionDelayMinutes ?? session.sessionDelayMinutes;
+      const newEndAt = new Date(newStartAt.getTime() + (session.exam.duration + newDelay) * 60000);
 
       const updated = await tx.examSession.update({
         where: { id: sessionId },
         data: {
           name: dto.name,
-          startAt: dto.startAt ? new Date(dto.startAt) : undefined,
-          sessionDelayMinutes: dto.sessionDelayMinutes,
+          startAt: newStartAt,
+          sessionDelayMinutes: newDelay,
+          endAt: newEndAt,
         },
         select: examSessionSelect,
       });
@@ -132,7 +152,7 @@ export class ExamSessionService {
     });
   }
 
-  // ===================== CHANGE STATUS (manual) =====================
+  // ===================== CHANGE STATUS (manual) implement yet =====================
   async changeStatus(sessionId: string, teacherId: string, newStatus: ExamSessionStatus) {
     return this.prisma.$transaction(async (tx) => {
       const session = await this.ensureSessionExists(sessionId, tx);
@@ -178,7 +198,7 @@ export class ExamSessionService {
       const session = await this.ensureSessionExists(sessionId, tx);
       this.ensureTeacherOwnership(session.class.teacherId, teacherId);
 
-      // Chỉ cho phép xoá khi SCHEDULED (chưa bắt đầu)
+      // Chỉ cho phép xoá khi SCHEDULED (chưa bắt đầu) and dont close
       if (session.status !== ExamSessionStatus.SCHEDULED) {
         throw AppException.badRequest('Only delete session with status is SCHEDULED');
       }
@@ -195,12 +215,13 @@ export class ExamSessionService {
   ) {
     const exam = await tx.exam.findFirst({
       where: { id: examId, teacherId, archivedAt: null },
-      select: { status: true },
+      select: { status: true, duration: true },
     });
     if (!exam) throw AppException.notFound('Exam not found');
     if (exam.status !== ExamStatus.PUBLISHED) {
       throw AppException.badRequest('Exam status is DRAFT');
     }
+    return exam;
   }
 
   private async ensureClassOwnership(
@@ -221,7 +242,10 @@ export class ExamSessionService {
       select: {
         id: true,
         status: true,
+        startAt: true,
+        sessionDelayMinutes: true,
         class: { select: { teacherId: true } },
+        exam: { select: { id: true, duration: true } },
       },
     });
     if (!session) throw AppException.notFound('Session not found');

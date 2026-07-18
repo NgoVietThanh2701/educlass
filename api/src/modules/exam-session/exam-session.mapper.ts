@@ -2,10 +2,9 @@ import { Prisma } from '@prisma/client';
 
 export const examSessionSelect = Prisma.validator<Prisma.ExamSessionSelect>()({
   id: true,
-  examId: true,
-  classId: true,
   name: true,
   startAt: true,
+  endAt: true,
   sessionDelayMinutes: true,
   status: true,
   createdAt: true,
@@ -36,10 +35,9 @@ export type ExamSessionWithRelations = Prisma.ExamSessionGetPayload<{
 export function toExamSessionResponse(session: ExamSessionWithRelations) {
   return {
     id: session.id,
-    examId: session.examId,
-    classId: session.classId,
     name: session.name,
     startAt: session.startAt,
+    endAt: session.endAt,
     sessionDelayMinutes: session.sessionDelayMinutes,
     status: session.status,
     createdAt: session.createdAt,

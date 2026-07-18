@@ -11,12 +11,14 @@ export class CreateExamSessionDto {
   @IsString()
   classId: string;
 
-  @ApiProperty({ required: false, description: 'Tên buổi thi (tuỳ chọn)' })
+  @ApiProperty({ description: 'Tên buổi thi', example: 'Kiem tra giua ky' })
   @IsString()
-  @IsOptional()
-  name?: string;
+  name: string;
 
-  @ApiProperty({ description: 'Thời gian bắt đầu (ISO 8601)' })
+  @ApiProperty({
+    description: 'Thời gian bắt đầu (ISO 8601)',
+    example: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+  })
   @Type(() => Date)
   @IsDate()
   startAt: Date;
