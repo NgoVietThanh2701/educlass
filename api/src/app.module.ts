@@ -12,6 +12,7 @@ import { ClassModule } from './modules/class/class.module';
 import { ExamsModule } from './modules/exams/exams.module';
 import { ExamSessionModule } from './modules/exam-session/exam-session.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ExamAttemptModule } from './modules/exam-attempt/exam-attempt.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ClassModule,
     ExamsModule,
     ExamSessionModule,
+    ExamAttemptModule,
   ],
   controllers: [],
   providers: [

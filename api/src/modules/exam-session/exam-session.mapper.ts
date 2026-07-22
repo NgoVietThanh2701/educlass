@@ -1,4 +1,6 @@
+import { convertUtcToVietnamTime } from '@common/utils/format-time.util';
 import { Prisma } from '@prisma/client';
+import { ExamSessionResponseDto } from './dto/exam-session-response.dto';
 
 export const examSessionSelect = Prisma.validator<Prisma.ExamSessionSelect>()({
   id: true,
@@ -8,7 +10,6 @@ export const examSessionSelect = Prisma.validator<Prisma.ExamSessionSelect>()({
   sessionDelayMinutes: true,
   status: true,
   createdAt: true,
-  updatedAt: true,
   exam: {
     select: {
       id: true,
@@ -32,16 +33,15 @@ export type ExamSessionWithRelations = Prisma.ExamSessionGetPayload<{
   select: typeof examSessionSelect;
 }>;
 
-export function toExamSessionResponse(session: ExamSessionWithRelations) {
+export function toExamSessionResponse(session: ExamSessionWithRelations): ExamSessionResponseDto {
   return {
     id: session.id,
     name: session.name,
-    startAt: session.startAt,
-    endAt: session.endAt,
+    startAt: convertUtcToVietnamTime(session.startAt),
+    endAt: convertUtcToVietnamTime(session.endAt),
     sessionDelayMinutes: session.sessionDelayMinutes,
     status: session.status,
-    createdAt: session.createdAt,
-    updatedAt: session.updatedAt,
+    createdAt: convertUtcToVietnamTime(session.createdAt),
     exam: session.exam,
     class: session.class,
     attemptCount: session._count.attempts,

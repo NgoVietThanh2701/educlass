@@ -1,4 +1,5 @@
 // src/modules/exam-session/exam-session.scheduler.ts
+import { ExamAttemptService } from '@modules/exam-attempt/exam-attempt.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ExamSessionStatus } from '@prisma/client';
@@ -8,36 +9,44 @@ import { PrismaService } from '@prisma/prisma.service';
 export class ExamSessionScheduler {
   private readonly logger = new Logger(ExamSessionScheduler.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly examAttemptService: ExamAttemptService,
+  ) {}
 
   // Chạy mỗi phút để kiểm tra
   @Cron(CronExpression.EVERY_MINUTE)
   async handleSessionStatusTransitions() {
-    this.logger.debug('Checking for sessions to open or close exam...');
-
-    // Dùng transaction để tránh race condition
     const now = new Date();
 
-    const opened = await this.prisma.examSession.updateMany({
-      where: {
-        status: ExamSessionStatus.SCHEDULED,
-        startAt: { lte: now },
-      },
-      data: {
-        status: ExamSessionStatus.OPEN,
-      },
-    });
-    if (opened.count) this.logger.log(`Opened ${opened.count} sessions`);
+    this.logger.log('Check scheduler for exam session...');
 
-    const closed = await this.prisma.examSession.updateMany({
-      where: {
-        status: ExamSessionStatus.OPEN,
-        endAt: { lte: now },
-      },
-      data: { status: ExamSessionStatus.CLOSED },
-    });
-    if (closed.count) this.logger.log(`Closed ${closed.count} sessions`);
+    try {
+      const opened = await this.prisma.examSession.updateMany({
+        where: { status: ExamSessionStatus.SCHEDULED, startAt: { lte: now } },
+        data: { status: ExamSessionStatus.OPEN },
+      });
+      if (opened.count) this.logger.log(`Opened ${opened.count} sessions`);
 
-    // 3. Có thể xử lý các ExamAttempt IN_PROGRESS thuộc session vừa đóng -> tự động nộp bài (sẽ làm ở Attempt module)
+      const closed = await this.prisma.examSession.updateMany({
+        where: { status: ExamSessionStatus.OPEN, endAt: { lte: now } },
+        data: { status: ExamSessionStatus.CLOSED },
+      });
+      if (closed.count) this.logger.log(`Closed ${closed.count} sessions`);
+    } catch (error) {
+      this.logger.error(
+        'Failed to update session statuses',
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+
+    try {
+      await this.examAttemptService.timeoutExpiredAttempts();
+    } catch (error) {
+      this.logger.error(
+        'Failed to timeout expired attempts',
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
   }
 }

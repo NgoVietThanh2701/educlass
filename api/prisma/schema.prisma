@@ -224,8 +224,7 @@ model ExamAttempt {
 
   @@index([sessionId])
   @@index([studentId])
-  @@index([status])
-  @@index([sessionId, studentId])
+  @@index([status, deadlineAt])
   @@unique([sessionId, studentId])
   @@map("exam_attempts")
 }

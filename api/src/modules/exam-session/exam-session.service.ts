@@ -87,7 +87,7 @@ export class ExamSessionService {
   }
 
   // ===================== FIND ONE =====================
-  async findOne(sessionId: string, userId: string, role: string) {
+  async findOne(sessionId: string, userId: string, role: string): Promise<ExamSessionResponseDto> {
     const session = await this.prisma.examSession.findUnique({
       where: { id: sessionId },
       select: examSessionSelect,
@@ -153,7 +153,11 @@ export class ExamSessionService {
   }
 
   // ===================== CHANGE STATUS (manual) implement yet =====================
-  async changeStatus(sessionId: string, teacherId: string, newStatus: ExamSessionStatus) {
+  async changeStatus(
+    sessionId: string,
+    teacherId: string,
+    newStatus: ExamSessionStatus,
+  ): Promise<ExamSessionResponseDto> {
     return this.prisma.$transaction(async (tx) => {
       const session = await this.ensureSessionExists(sessionId, tx);
       this.ensureTeacherOwnership(session.class.teacherId, teacherId);
