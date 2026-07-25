@@ -1,7 +1,7 @@
 // statement setup database
 npx prisma migrate reset
 npx prisma migrate dev --create-only --name init-project
-add sequence to migration.sql
+-add sequence to migration.sql
 npx prisma migrate dev
 npx prisma generate
 

@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
 import { AppException } from '@common/exceptions/app.exception';
 import { UserResponseDto } from './dto/user-response.dto';
-import { toUserResponse } from './user.mapper';
+import { toUserResponse, userSelect } from './user.mapper';
 
 @Injectable()
 export class UsersService {
@@ -14,30 +14,9 @@ export class UsersService {
 
   // Get profile
   async getCurrentProfile(userId: string): Promise<UserResponseDto> {
-    const user = await this.findById(userId);
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: userSelect });
     if (!user) throw AppException.notFound('User not found');
     return toUserResponse(user);
-  }
-
-  // Find user by email
-  async findByEmail(email: string) {
-    return this.prisma.user.findUnique({
-      where: { email },
-    });
-  }
-
-  //Find user by id
-  findById(userId: string) {
-    return this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-  }
-
-  // Find user by email or username
-  findByUserName(userName: string) {
-    return this.prisma.user.findUnique({
-      where: { userName },
-    });
   }
 
   // Mark user email is verified

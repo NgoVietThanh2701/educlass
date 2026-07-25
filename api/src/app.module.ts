@@ -13,6 +13,7 @@ import { ExamsModule } from './modules/exams/exams.module';
 import { ExamSessionModule } from './modules/exam-session/exam-session.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ExamAttemptModule } from './modules/exam-attempt/exam-attempt.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ExamAttemptModule } from './modules/exam-attempt/exam-attempt.module';
     ExamsModule,
     ExamSessionModule,
     ExamAttemptModule,
+    ChatModule,
   ],
   controllers: [],
   providers: [

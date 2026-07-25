@@ -3,14 +3,13 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { PrismaService } from '@prisma/prisma.service';
-import { AppException } from '@common/exceptions/app.exception';
-import { AuthUser } from '@common/interfaces/request.interface';
+import { AuthUser, JwtPayload } from '@common/interfaces/auth-user.interface';
+import { AuthValidationService } from '../auth-validation.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    private prisma: PrismaService,
+    private readonly authValidateService: AuthValidationService,
     configService: ConfigService,
   ) {
     super({
@@ -21,21 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   // validate the user from the JWT payload
-  async validate(payload: { sub: string }): Promise<AuthUser> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
-      select: { id: true, email: true, archivedAt: true, role: true, mustChangePassword: true },
-    });
-
-    if (!user || user.archivedAt) {
-      throw AppException.unauthorized('User not found or disabled');
-    }
-
-    return {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      mustChangePassword: user.mustChangePassword,
-    };
+  validate(payload: JwtPayload): Promise<AuthUser> {
+    return this.authValidateService.validateJwtPayload(payload);
   }
 }

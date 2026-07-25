@@ -17,6 +17,7 @@ import { AppException } from '@common/exceptions/app.exception';
 import { UserResponseDto } from '@modules/users/dto/user-response.dto';
 import { OTP_PURPOSE } from '@common/constants/purpose-otp.constant';
 import { toUserResponse, userSelect } from '@modules/users/user.mapper';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -32,7 +33,10 @@ export class AuthService {
   async register(registerDto: RegisterDto): Promise<UserResponseDto> {
     const { email, fullName, password } = registerDto;
 
-    const existingUser = await this.userService.findByEmail(email);
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
     if (existingUser) {
       throw AppException.conflict('User with this email already exists');
     }
@@ -67,7 +71,10 @@ export class AuthService {
 
   // Refresh access token
   async refreshTokens(userId: string): Promise<AuthResponseDto> {
-    const user = await this.userService.findById(userId);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: userSelect,
+    });
     if (!user) throw AppException.notFound('User not found');
     const tokens = await this.generateTokens(user.id, user.userName);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
@@ -82,7 +89,10 @@ export class AuthService {
   async verifyOtpRegister(otp: VerifyOtpDto): Promise<AuthResponseDto> {
     const { email, code } = otp;
 
-    const user = await this.userService.findByEmail(email);
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: { ...userSelect, archivedAt: true, emailVerified: true },
+    });
     if (!user || user.archivedAt) throw AppException.notFound('User not found or disabled');
 
     if (user.emailVerified) throw AppException.badRequest('Email already verified');
@@ -101,7 +111,10 @@ export class AuthService {
 
   // Resend OTP
   async resendOtpRegister(email: string): Promise<void> {
-    const user = await this.userService.findByEmail(email);
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: { archivedAt: true, emailVerified: true },
+    });
     if (!user || user.archivedAt) throw AppException.notFound('User not found or disabled');
     if (user.emailVerified) throw AppException.badRequest('Email already verified');
 
@@ -134,6 +147,45 @@ export class AuthService {
     };
   }
 
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const { newPassword } = dto;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        passwordHash: true,
+        mustChangePassword: true,
+      },
+    });
+
+    if (!user) {
+      throw AppException.notFound('User not found');
+    }
+
+    if (!user.mustChangePassword) {
+      throw AppException.badRequest('Password change is not required');
+    }
+
+    const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
+
+    if (isSamePassword) {
+      throw AppException.badRequest('New password must be different from the current password');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        mustChangePassword: false,
+        refreshToken: null,
+      },
+    });
+  }
+
+  // =============== private function
   private async generateTokens(
     userId: string,
     userName: string,

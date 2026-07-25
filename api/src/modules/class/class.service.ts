@@ -14,18 +14,18 @@ import { AppException } from '@common/exceptions/app.exception';
 import { PrismaErrorCode } from '@common/constants/prisma-error.constant';
 import { UpdateClassDto } from './dto/update-class.dto';
 import { AddStudentDto } from './dto/add-student.dto';
-import { UsersService } from '@modules/users/users.service';
 import { SEQUENCE } from '@modules/auth/auth.constants';
 import { UserNameUtil } from '@common/utils/username.util';
 import * as bcrypt from 'bcrypt';
 import { CreateStudentDto } from './dto/student.dto';
+import { ConversationService } from '@modules/chat/services/conversation.service';
 
 @Injectable()
 export class ClassService {
   private readonly SALT_ROUNDS = 12;
   constructor(
     private readonly prisma: PrismaService,
-    private userService: UsersService,
+    private readonly conversationService: ConversationService,
   ) {}
 
   // Create class (Only teacher)
@@ -148,7 +148,10 @@ export class ClassService {
     this.ensureTeacherOwnsClass(cls.teacherId, teacherId);
 
     // check user is student
-    const student = await this.userService.findByUserName(dto.userName);
+    const student = await this.prisma.user.findUnique({
+      where: { userName: dto.userName },
+      select: { id: true, role: true },
+    });
     if (!student || student.role !== RoleUser.STUDENT) {
       throw AppException.forbidden('Member is not valid');
     }
@@ -171,7 +174,10 @@ export class ClassService {
     this.ensureTeacherOwnsClass(cls.teacherId, teacherId);
 
     // Check student belong class?
-    const student = await this.userService.findById(studentId);
+    const student = await this.prisma.user.findUnique({
+      where: { id: studentId },
+      select: { id: true, role: true },
+    });
     if (!student || student.role !== RoleUser.STUDENT) {
       throw AppException.forbidden('Member is not valid');
     }
@@ -196,7 +202,7 @@ export class ClassService {
 
   // Create student and add to class (Only teacher)
   async createStudent(classId: string, teacherId: string, dto: CreateStudentDto): Promise<void> {
-    const cls = await this.findClassOrThrow(classId, { teacherId: true });
+    const cls = await this.findClassOrThrow(classId, { id: true, teacherId: true });
     this.ensureTeacherOwnsClass(cls.teacherId, teacherId);
 
     const studentNo = await this.prisma.nextSequence(SEQUENCE.STUDENT);
@@ -227,6 +233,8 @@ export class ClassService {
           studentId: student.id,
         },
       });
+
+      await this.conversationService.addUserToGroupChat(cls.id, cls.teacherId);
     });
   }
 

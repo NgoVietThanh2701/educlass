@@ -9,6 +9,7 @@ import { SuccessMessage } from '@common/decorators/message.decorator';
 import { UserResponseDto } from '@modules/users/dto/user-response.dto';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -136,5 +137,30 @@ export class AuthController {
   })
   refresh(@CurrentUser('id') userId: string): Promise<AuthResponseDto> {
     return this.authService.refreshTokens(userId);
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @SuccessMessage('Change password successfully')
+  @UseGuards(RefreshTokenGuard)
+  @ApiBearerAuth('JWT-refresh')
+  @ApiOperation({
+    summary: 'Change password on first login',
+    description: 'Change password with first login (student)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Change password successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: HttpStatus.TOO_MANY_REQUESTS,
+    description: 'Too many requests. Rate limit exceeded',
+  })
+  changePassword(@CurrentUser('id') userId: string, @Body() dto: ChangePasswordDto): Promise<void> {
+    return this.authService.changePassword(userId, dto);
   }
 }

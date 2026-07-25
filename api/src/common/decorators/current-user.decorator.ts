@@ -1,5 +1,5 @@
 // Custom decorator to extract user from request
-import { RequestWithUser } from '@common/interfaces/request.interface';
+import { RequestWithUser } from '@common/interfaces/auth-user.interface';
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export const CurrentUser = createParamDecorator(

@@ -16,6 +16,12 @@ CREATE TYPE "ExamSessionStatus" AS ENUM ('SCHEDULED', 'OPEN', 'CLOSED');
 -- CreateEnum
 CREATE TYPE "AttemptStatus" AS ENUM ('IN_PROGRESS', 'SUBMITTED', 'TIMEOUT');
 
+-- CreateEnum
+CREATE TYPE "ConversationType" AS ENUM ('DIRECT', 'GROUP');
+
+-- CreateEnum
+CREATE TYPE "GroupMessagePermission" AS ENUM ('ALL', 'TEACHER_ONLY');
+
 -- CreateTable
 CREATE TABLE "managers" (
     "id" TEXT NOT NULL,
@@ -150,6 +156,50 @@ CREATE TABLE "student_answers" (
     CONSTRAINT "student_answers_pkey" PRIMARY KEY ("attemptId","questionId","optionId")
 );
 
+-- CreateTable
+CREATE TABLE "Conversation" (
+    "id" TEXT NOT NULL,
+    "type" "ConversationType" NOT NULL,
+    "classId" TEXT,
+    "messagePermission" "GroupMessagePermission",
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Conversation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Participant" (
+    "conversationId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "joinedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Participant_pkey" PRIMARY KEY ("conversationId","userId")
+);
+
+-- CreateTable
+CREATE TABLE "Message" (
+    "id" TEXT NOT NULL,
+    "conversationId" TEXT NOT NULL,
+    "senderId" TEXT NOT NULL,
+    "content" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Message_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "MessageAttachment" (
+    "id" TEXT NOT NULL,
+    "messageId" TEXT NOT NULL,
+    "objectKey" TEXT NOT NULL,
+    "filename" TEXT NOT NULL,
+    "size" INTEGER NOT NULL,
+    "mimeType" TEXT NOT NULL,
+
+    CONSTRAINT "MessageAttachment_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "managers_email_key" ON "managers"("email");
 
@@ -220,16 +270,25 @@ CREATE INDEX "exam_attempts_sessionId_idx" ON "exam_attempts"("sessionId");
 CREATE INDEX "exam_attempts_studentId_idx" ON "exam_attempts"("studentId");
 
 -- CreateIndex
-CREATE INDEX "exam_attempts_status_idx" ON "exam_attempts"("status");
-
--- CreateIndex
-CREATE INDEX "exam_attempts_sessionId_studentId_idx" ON "exam_attempts"("sessionId", "studentId");
+CREATE INDEX "exam_attempts_status_deadlineAt_idx" ON "exam_attempts"("status", "deadlineAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "exam_attempts_sessionId_studentId_key" ON "exam_attempts"("sessionId", "studentId");
 
 -- CreateIndex
 CREATE INDEX "student_answers_questionId_idx" ON "student_answers"("questionId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Conversation_classId_key" ON "Conversation"("classId");
+
+-- CreateIndex
+CREATE INDEX "Conversation_classId_idx" ON "Conversation"("classId");
+
+-- CreateIndex
+CREATE INDEX "Message_conversationId_createdAt_idx" ON "Message"("conversationId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "MessageAttachment_messageId_idx" ON "MessageAttachment"("messageId");
 
 -- AddForeignKey
 ALTER TABLE "classes" ADD CONSTRAINT "classes_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -269,6 +328,24 @@ ALTER TABLE "student_answers" ADD CONSTRAINT "student_answers_questionId_fkey" F
 
 -- AddForeignKey
 ALTER TABLE "student_answers" ADD CONSTRAINT "student_answers_optionId_questionId_fkey" FOREIGN KEY ("optionId", "questionId") REFERENCES "question_options"("id", "questionId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_classId_fkey" FOREIGN KEY ("classId") REFERENCES "classes"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Participant" ADD CONSTRAINT "Participant_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "Conversation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Participant" ADD CONSTRAINT "Participant_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Message" ADD CONSTRAINT "Message_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "Conversation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Message" ADD CONSTRAINT "Message_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MessageAttachment" ADD CONSTRAINT "MessageAttachment_messageId_fkey" FOREIGN KEY ("messageId") REFERENCES "Message"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Teacher sequence
 CREATE SEQUENCE teacher_seq

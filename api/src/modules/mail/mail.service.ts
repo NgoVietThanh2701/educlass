@@ -4,19 +4,18 @@ import { ConfigService } from '@nestjs/config';
 import { MAIL_SUBJECT, MAIL_TEMPLATE } from './mail.constants';
 import { OtpMailContext, WelcomeMailContext } from './mail.type';
 import { AppException } from '@common/exceptions/app.exception';
+import { AppConfig } from '@common/constants/app-config.constant';
 
 @Injectable()
 export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
   private readonly supportEmail: string;
-  private readonly appUrl: string;
 
   constructor(
     private readonly mailerService: MailerService,
     private readonly config: ConfigService,
   ) {
     this.supportEmail = config.getOrThrow('MAIL_SUPPORT');
-    this.appUrl = config.getOrThrow('APP_URL');
   }
 
   async onModuleInit() {
@@ -78,7 +77,7 @@ export class MailService implements OnModuleInit {
   async sendWelcomeEmail(to: string, fullName: string): Promise<void> {
     await this.sendMail<WelcomeMailContext>(to, MAIL_SUBJECT.WELCOME, MAIL_TEMPLATE.WELCOME, {
       fullName,
-      loginUrl: this.appUrl,
+      loginUrl: AppConfig.APP_URL,
     });
   }
 }
