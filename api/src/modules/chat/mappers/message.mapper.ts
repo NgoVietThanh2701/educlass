@@ -1,5 +1,5 @@
-import { AppConfig } from '@common/constants/app-config.constant';
 import { Prisma } from '@prisma/client';
+import { v2 as cloudinary } from 'cloudinary';
 
 export const messageSelect = Prisma.validator<Prisma.MessageSelect>()({
   id: true,
@@ -19,6 +19,7 @@ export const messageSelect = Prisma.validator<Prisma.MessageSelect>()({
     select: {
       id: true,
       objectKey: true,
+      resourceType: true,
       filename: true,
       size: true,
       mimeType: true,
@@ -39,7 +40,10 @@ export function toMessageResponse(message: MessageWithRelations) {
     content: message.content,
     attachments: message.attachments.map((att) => ({
       id: att.id,
-      url: `${AppConfig.CDN_BASE_URL}/${att.objectKey}`,
+      url: cloudinary.url(att.objectKey, {
+        resource_type: att.resourceType ?? 'auto',
+        secure: true,
+      }),
       filename: att.filename,
       size: att.size,
       mimeType: att.mimeType,

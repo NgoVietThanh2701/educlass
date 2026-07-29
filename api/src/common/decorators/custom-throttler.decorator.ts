@@ -6,7 +6,7 @@ import { Throttle } from '@nestjs/throttler';
 export const StrictThrottle = () =>
   Throttle({
     default: {
-      ttl: 1000,
+      ttl: 60,
       limit: 3,
     },
   });
@@ -15,8 +15,8 @@ export const StrictThrottle = () =>
 export const ModerateThrottle = () =>
   Throttle({
     default: {
-      ttl: 1000,
-      limit: 7,
+      ttl: 60,
+      limit: 15,
     },
   });
 
@@ -24,7 +24,7 @@ export const ModerateThrottle = () =>
 export const RelaxedThrottle = () =>
   Throttle({
     default: {
-      ttl: 1000,
-      limit: 20,
+      ttl: 60,
+      limit: 35,
     },
   });

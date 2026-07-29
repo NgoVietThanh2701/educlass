@@ -6,10 +6,12 @@ import { SuccessMessage } from '@common/decorators/message.decorator';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { RolesUserGuard } from '@common/guards/role-user.guard';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { RelaxedThrottle } from '@common/decorators/custom-throttler.decorator';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesUserGuard)
+@RelaxedThrottle()
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -27,7 +29,4 @@ export class UsersController {
   getProfile(@CurrentUser('id') userId: string): Promise<UserResponseDto> {
     return this.usersService.getCurrentProfile(userId);
   }
-
-  // create student (only TEACHER)
-  //@post('students')
 }

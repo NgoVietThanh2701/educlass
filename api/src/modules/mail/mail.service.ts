@@ -13,14 +13,15 @@ export class MailService implements OnModuleInit {
 
   constructor(
     private readonly mailerService: MailerService,
-    private readonly config: ConfigService,
+    config: ConfigService,
   ) {
     this.supportEmail = config.getOrThrow('MAIL_SUPPORT');
   }
 
   async onModuleInit() {
     try {
-      await (this.mailerService as any).transporter.verify();
+      const transporter = this.mailerService.getTransporter();
+      await transporter.verify();
       this.logger.log('SMTP connection established successfully.');
     } catch (err) {
       this.logger.error('SMTP verification failed.', err);
@@ -54,7 +55,7 @@ export class MailService implements OnModuleInit {
       this.logger.log(JSON.stringify(info));
       this.logger.log(`Email sent to ${to} with template "${template}"`);
     } catch (error) {
-      console.error('Error during service mail:', error);
+      this.logger.error('Error during service mail:', error);
       throw AppException.internal('Unable to send email');
     }
   }

@@ -41,7 +41,14 @@ export class MessageService {
           senderId: userId,
           content: dto.content || null,
           attachments: dto.attachments?.length
-            ? { createMany: { data: dto.attachments } }
+            ? {
+                createMany: {
+                  data: dto.attachments.map((attachment) => ({
+                    ...attachment,
+                    resourceType: attachment.resourceType ?? 'auto',
+                  })),
+                },
+              }
             : undefined,
         },
         select: messageSelect,

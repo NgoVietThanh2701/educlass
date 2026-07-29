@@ -23,11 +23,12 @@ import { SuccessMessage } from '@common/decorators/message.decorator';
 import { UpdateClassDto } from './dto/update-class.dto';
 import { AddStudentDto } from './dto/add-student.dto';
 import { CreateStudentDto, CreateStudentResponseDto } from './dto/student.dto';
-import { StrictThrottle } from '@common/decorators/custom-throttler.decorator';
+import { StrictThrottle, ModerateThrottle } from '@common/decorators/custom-throttler.decorator';
 
 @ApiTags('Classes')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesUserGuard)
+@ModerateThrottle()
 @Controller('classes')
 export class ClassController {
   constructor(private readonly classService: ClassService) {}

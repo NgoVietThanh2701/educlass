@@ -193,6 +193,7 @@ CREATE TABLE "MessageAttachment" (
     "id" TEXT NOT NULL,
     "messageId" TEXT NOT NULL,
     "objectKey" TEXT NOT NULL,
+    "resourceType" TEXT NOT NULL,
     "filename" TEXT NOT NULL,
     "size" INTEGER NOT NULL,
     "mimeType" TEXT NOT NULL,
@@ -347,7 +348,6 @@ ALTER TABLE "Message" ADD CONSTRAINT "Message_senderId_fkey" FOREIGN KEY ("sende
 -- AddForeignKey
 ALTER TABLE "MessageAttachment" ADD CONSTRAINT "MessageAttachment_messageId_fkey" FOREIGN KEY ("messageId") REFERENCES "Message"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- Teacher sequence
 CREATE SEQUENCE teacher_seq
 START WITH 1
 INCREMENT BY 1
@@ -355,7 +355,6 @@ NO MINVALUE
 NO MAXVALUE
 CACHE 1;
 
--- Student sequence
 CREATE SEQUENCE student_seq
 START WITH 1
 INCREMENT BY 1

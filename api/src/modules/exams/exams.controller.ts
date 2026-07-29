@@ -31,6 +31,7 @@ import { StrictThrottle } from '@common/decorators/custom-throttler.decorator';
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesUserGuard)
 @RolesUser(RoleUser.TEACHER)
+@StrictThrottle()
 @Controller('exams')
 export class ExamsController {
   constructor(private readonly examsService: ExamsService) {}

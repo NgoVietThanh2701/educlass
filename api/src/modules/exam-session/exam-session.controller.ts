@@ -20,11 +20,12 @@ import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { SuccessMessage } from '@common/decorators/message.decorator';
 import { ExamSessionResponseDto } from './dto/exam-session-response.dto';
 import { UpdateExamSessionDto } from './dto/update-exam-session.dto';
-import { StrictThrottle } from '@common/decorators/custom-throttler.decorator';
+import { StrictThrottle, ModerateThrottle } from '@common/decorators/custom-throttler.decorator';
 
 @ApiTags('Exam Sessions')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesUserGuard)
+@ModerateThrottle()
 @Controller('exam-sessions')
 export class ExamSessionController {
   constructor(private readonly examSessionService: ExamSessionService) {}

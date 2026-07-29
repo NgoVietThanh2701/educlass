@@ -1,12 +1,13 @@
 // Jwt auth guard
 import { SKIP_PASSWORD_CHECK_KEY } from '@common/decorators/skip-password-check';
 import { AppException } from '@common/exceptions/app.exception';
-import { ExecutionContext, Injectable } from '@nestjs/common';
+import { ExecutionContext, Injectable, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
+  private readonly logger = new Logger(JwtAuthGuard.name);
   constructor(private reflector: Reflector) {
     super();
   }
@@ -18,6 +19,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   handleRequest(err: Error, user: any, info: any, context: ExecutionContext) {
     // Xử lý lỗi xác thực (token sai, hết hạn...)
     if (err || !user) {
+      this.logger.warn(
+        `JWT authentication failed: ${info?.name ?? err?.name ?? 'Unknown'} - ${
+          info?.message ?? err?.message ?? 'No details'
+        }`,
+      );
       throw AppException.unauthorized('Token is missing or invalid');
     }
     const skipPasswordCheck = this.reflector.getAllAndOverride<boolean>(SKIP_PASSWORD_CHECK_KEY, [

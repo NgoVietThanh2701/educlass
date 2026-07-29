@@ -18,6 +18,14 @@ export class AttachmentDto {
   @ApiProperty({ description: 'MIME type' })
   @IsString()
   mimeType: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Resource type from storage (e.g., image, video, raw)',
+  })
+  @IsString()
+  @IsOptional()
+  resourceType?: string;
 }
 
 export class SendMessageDto {

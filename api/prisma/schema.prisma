@@ -292,6 +292,7 @@ model Message {
   sender         User                @relation(fields: [senderId], references: [id])
   attachments    MessageAttachment[]
 
+  @@index(senderId)
   @@index([conversationId, createdAt])
 }
 
@@ -299,6 +300,7 @@ model MessageAttachment {
   id        String   @id @default(uuid())
   messageId String
   objectKey String
+  resourceType String
   filename  String
   size      Int
   mimeType  String

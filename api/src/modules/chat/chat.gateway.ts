@@ -4,6 +4,7 @@ import {
   SubscribeMessage,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
@@ -19,7 +20,7 @@ import { Logger } from '@nestjs/common';
 import { AppException } from '@common/exceptions/app.exception';
 
 @WebSocketGateway({ namespace: 'chat', cors: { origin: AppConfig.APP_URL, credentials: true } })
-export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);
   @WebSocketServer()
   server: Server;
@@ -31,20 +32,38 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly authValidationService: AuthValidationService,
   ) {}
 
-  async handleConnection(client: AuthenticatedSocket) {
-    try {
-      const token = client.handshake.auth?.token ?? client.handshake.query?.token;
+  afterInit(server: Server) {
+    server.use((socket, next) => {
+      const token = socket.handshake.auth?.token ?? socket.handshake.query?.token;
+
       if (typeof token !== 'string') {
-        throw new Error('No token provided');
+        this.logger.error('Socket authentication failed: no token provided');
+        return next(new Error('Unauthorized'));
       }
-      const payload = this.jwtService.verify<JwtPayload>(token);
-      client.user = await this.authValidationService.validateJwtPayload(payload);
-      this.logger.log(`Client connected: ${client.id} (user: ${client.user.id})`);
-    } catch (err) {
-      const error = err as Error;
-      this.logger.error('Socket authentication failed:', error.message);
-      client.disconnect();
-    }
+
+      let payload: JwtPayload;
+
+      try {
+        payload = this.jwtService.verify<JwtPayload>(token);
+      } catch (err) {
+        this.logger.error('Socket authentication failed:', (err as Error).message);
+        return next(new Error('Unauthorized'));
+      }
+      this.authValidationService
+        .validateJwtPayload(payload)
+        .then((user) => {
+          (socket as AuthenticatedSocket).user = user;
+          next();
+        })
+        .catch((err) => {
+          this.logger.error('Socket authentication failed:', (err as Error).message);
+          next(new Error('Unauthorized'));
+        });
+    });
+  }
+
+  handleConnection(client: AuthenticatedSocket) {
+    this.logger.log(`Client connected: ${client.id} (user: ${client.user?.id ?? 'unknown'})`);
   }
 
   handleDisconnect(client: AuthenticatedSocket) {

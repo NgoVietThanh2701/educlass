@@ -7,11 +7,12 @@ import {
 } from './attempt.mapper';
 import { PrismaService } from '@prisma/prisma.service';
 import { CreateAttemptDto } from './dto/create-attempt.dto';
-import { AttemptResponseDto } from './dto/attempt-response.dto';
+import { AttemptListResponseDto, AttemptResponseDto } from './dto/attempt-response.dto';
 import { AttemptStatus, ExamSessionStatus, Prisma, QuestionType, RoleUser } from '@prisma/client';
 import { AppException } from '@common/exceptions/app.exception';
 import { PrismaErrorCode } from '@common/constants/prisma-error.constant';
 import { SyncAnswersDto } from './dto/sync-answers.dto';
+import { QueryAttemptDto } from './dto/query-attempt.dto';
 
 @Injectable()
 export class ExamAttemptService {
@@ -50,6 +51,41 @@ export class ExamAttemptService {
         throw error;
       }
     });
+  }
+
+  // === Get all attempts for teacher
+  findAllByTeacher(teacherId: string, query: QueryAttemptDto): Promise<AttemptListResponseDto> {
+    const where: Prisma.ExamAttemptWhereInput = {};
+
+    // Chỉ xem attempt thuộc lớp của teacher này
+    where.session = { class: { teacherId } };
+
+    if (query.sessionId) where.sessionId = query.sessionId;
+    if (query.classId) where.session = { ...where.session, classId: query.classId };
+    if (query.status) where.status = query.status;
+
+    if (query.search) {
+      where.student = {
+        OR: [
+          { fullName: { contains: query.search, mode: 'insensitive' } },
+          { userName: { contains: query.search, mode: 'insensitive' } },
+        ],
+      };
+    }
+
+    return this.queryAttempts(where, query);
+  }
+
+  findMyAttempts(studentId: string, query: QueryAttemptDto): Promise<AttemptListResponseDto> {
+    const where: Prisma.ExamAttemptWhereInput = {
+      studentId,
+    };
+
+    if (query.sessionId) where.sessionId = query.sessionId;
+    if (query.classId) where.session = { classId: query.classId };
+    if (query.status) where.status = query.status;
+
+    return this.queryAttempts(where, query);
   }
 
   // ===================== GET ATTEMPT DETAILS =====================
@@ -183,6 +219,34 @@ export class ExamAttemptService {
   }
 
   // ===================== PRIVATE HELPERS =====================
+
+  private async queryAttempts(where: Prisma.ExamAttemptWhereInput, query: QueryAttemptDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const sortBy = query.sortBy ?? 'createdAt';
+    const order = query.order ?? 'desc';
+
+    const [total, attempts] = await Promise.all([
+      this.prisma.examAttempt.count({ where }),
+      this.prisma.examAttempt.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { [sortBy]: order },
+        select: attemptSelect,
+      }),
+    ]);
+
+    return {
+      data: attempts.map(toAttemptResponse),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 
   private async ensureSessionOpenForStudent(
     sessionId: string,

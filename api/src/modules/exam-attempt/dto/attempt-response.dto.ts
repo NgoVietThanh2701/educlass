@@ -1,3 +1,4 @@
+import { MetaPagingResponseDto } from '@common/dto/pagination-response.dto';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AttemptAnswerResponseDto {
@@ -49,4 +50,12 @@ export class AttemptResponseDto {
     type: [AttemptAnswerResponseDto],
   })
   answers: AttemptAnswerResponseDto[];
+}
+
+export class AttemptListResponseDto {
+  @ApiProperty({ type: [AttemptResponseDto], description: 'Array of attempts' })
+  data: AttemptResponseDto[];
+
+  @ApiProperty({ type: MetaPagingResponseDto, description: 'Pagination metadata' })
+  meta: MetaPagingResponseDto;
 }

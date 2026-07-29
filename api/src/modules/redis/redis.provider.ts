@@ -1,10 +1,11 @@
-import { Provider } from '@nestjs/common';
+import { Logger, Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 export const RedisProvider: Provider = {
   provide: 'REDIS_CLIENT',
   useFactory: (configService: ConfigService) => {
+    const logger = new Logger('RedisProvider');
     const redisInstance = new Redis({
       host: configService.getOrThrow('REDIS_HOST'),
       port: Number(configService.getOrThrow('REDIS_PORT')),
@@ -27,10 +28,10 @@ export const RedisProvider: Provider = {
     });
     // Log khi kết nối thành công và lỗi
     redisInstance.on('connect', () => {
-      console.log('Redis connected successfully');
+      logger.log('Redis connected successfully');
     });
     redisInstance.on('error', (err) => {
-      console.error('Redis connection error:', err);
+      logger.error('Redis connection error:', err);
     });
 
     return redisInstance;

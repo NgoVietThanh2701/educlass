@@ -1,3 +1,4 @@
+import { SequenceName } from '@modules/auth/auth.constants';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient } from '@prisma/client';
@@ -25,7 +26,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     this.logger.log('Database disconnected!');
   }
 
-  async cleanDatabase() {
+  async cleanDatabaseForTesting() {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('Cleaning the database is not allowed in production!');
     }
@@ -43,7 +44,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     );
   }
 
-  async nextSequence(name: string): Promise<number> {
+  async nextSequence(name: SequenceName): Promise<number> {
     const result = await this.$queryRaw<{ nextval: bigint }[]>(
       Prisma.sql`SELECT nextval(${name}::regclass)::bigint AS nextval`,
     );

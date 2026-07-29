@@ -7,11 +7,16 @@ import { CreateDirectConversationDto } from '../dto/create-direct-conversation.d
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { RolesUser } from '@common/decorators/roles.decorator';
 import { UpdatePermissionDto } from '../dto/update-permission.dto';
-import { ModerateThrottle, StrictThrottle } from '@common/decorators/custom-throttler.decorator';
+import {
+  ModerateThrottle,
+  StrictThrottle,
+  RelaxedThrottle,
+} from '@common/decorators/custom-throttler.decorator';
 
 @ApiTags('Conversations')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
+@RelaxedThrottle()
 @Controller('conversations')
 export class ConversationController {
   constructor(private readonly conversationService: ConversationService) {}
