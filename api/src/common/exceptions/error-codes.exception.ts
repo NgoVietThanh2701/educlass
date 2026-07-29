@@ -5,6 +5,7 @@ export const ErrorCode = {
   FORBIDDEN: 'FORBIDDEN', // 403 // Not permission
   NOT_FOUND: 'NOT_FOUND', // 404
   CONFLICT: 'CONFLICT', // 409 (data exists)
+  WS_EXCEPTION: 'WS_EXCEPTION',
   INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR', // 500
 
   // Custom Error code

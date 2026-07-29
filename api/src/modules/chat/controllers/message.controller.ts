@@ -16,6 +16,7 @@ import { AttachmentService } from '../services/attachment.service';
 import { SendMessageDto } from '../dto/send-message.dto';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { RelaxedThrottle, ModerateThrottle } from '@common/decorators/custom-throttler.decorator';
 
 @ApiTags('Messages')
 @ApiBearerAuth('JWT-auth')
@@ -28,6 +29,7 @@ export class MessageController {
   ) {}
 
   @Post(':convId/messages')
+  @RelaxedThrottle()
   @ApiOperation({ summary: 'Send a message to a conversation' })
   sendMessage(
     @Param('convId') convId: string,
@@ -56,6 +58,7 @@ export class MessageController {
   }
 
   @Post('upload')
+  @ModerateThrottle()
   @ApiOperation({ summary: 'Upload a file attachment' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file'))

@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResendOtpDto, VerifyOtpDto } from './dto/verify-otp.dto';
+import { StrictThrottle, ModerateThrottle } from '@common/decorators/custom-throttler.decorator';
 import { SuccessMessage } from '@common/decorators/message.decorator';
 import { UserResponseDto } from '@modules/users/dto/user-response.dto';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
@@ -17,6 +18,7 @@ export class AuthController {
 
   // Register a new teacher
   @Post('register')
+  @StrictThrottle()
   @HttpCode(HttpStatus.CREATED)
   @SuccessMessage('The teacher has been successfully registered')
   @ApiOperation({
@@ -46,6 +48,7 @@ export class AuthController {
 
   // Verify email after registering
   @Post('register/verify-otp')
+  @StrictThrottle()
   @HttpCode(HttpStatus.OK)
   @SuccessMessage('OTP verified successfully')
   @ApiOperation({
@@ -70,6 +73,7 @@ export class AuthController {
 
   // Resend verify OTP
   @Post('register/resend-verification')
+  @StrictThrottle()
   @HttpCode(HttpStatus.OK)
   @SuccessMessage('OTP resend to email successfully')
   @ApiOperation({
@@ -90,6 +94,7 @@ export class AuthController {
 
   // Login for an existing teacher and student
   @Post('login')
+  @StrictThrottle()
   @HttpCode(HttpStatus.OK)
   @SuccessMessage('Logged in successfully')
   @ApiOperation({
@@ -115,6 +120,7 @@ export class AuthController {
 
   // Refresh access token
   @Post('refresh')
+  @ModerateThrottle()
   @HttpCode(HttpStatus.OK)
   @UseGuards(RefreshTokenGuard)
   @ApiBearerAuth('JWT-refresh')
@@ -140,6 +146,7 @@ export class AuthController {
   }
 
   @Post('change-password')
+  @ModerateThrottle()
   @HttpCode(HttpStatus.OK)
   @SuccessMessage('Change password successfully')
   @UseGuards(RefreshTokenGuard)

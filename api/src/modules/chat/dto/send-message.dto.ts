@@ -3,7 +3,7 @@ import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AttachmentDto {
-  @ApiProperty({ description: 'Object key from R2' })
+  @ApiProperty({ description: 'Object key from Cloud' })
   @IsString()
   objectKey: string;
 

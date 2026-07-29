@@ -6,7 +6,7 @@ import { MailModule } from './modules/mail/mail.module';
 import { ConfigModule } from '@nestjs/config';
 import { OtpModule } from './modules/otp/otp.module';
 import { UsersModule } from './modules/users/users.module';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ResponseInterceptor } from '@common/interceptors/response.interceptor';
 import { ClassModule } from './modules/class/class.module';
 import { ExamsModule } from './modules/exams/exams.module';
@@ -14,10 +14,17 @@ import { ExamSessionModule } from './modules/exam-session/exam-session.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ExamAttemptModule } from './modules/exam-attempt/exam-attempt.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60, // seconds
+        limit: 50, // 50 requests per minute
+      },
+    ]),
     ScheduleModule.forRoot(),
     AuthModule,
     PrismaModule,
@@ -36,6 +43,10 @@ import { ChatModule } from './modules/chat/chat.module';
     {
       provide: APP_INTERCEPTOR,
       useClass: ResponseInterceptor,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

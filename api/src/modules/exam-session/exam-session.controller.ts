@@ -20,6 +20,7 @@ import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { SuccessMessage } from '@common/decorators/message.decorator';
 import { ExamSessionResponseDto } from './dto/exam-session-response.dto';
 import { UpdateExamSessionDto } from './dto/update-exam-session.dto';
+import { StrictThrottle } from '@common/decorators/custom-throttler.decorator';
 
 @ApiTags('Exam Sessions')
 @ApiBearerAuth('JWT-auth')
@@ -29,6 +30,7 @@ export class ExamSessionController {
   constructor(private readonly examSessionService: ExamSessionService) {}
 
   @Post()
+  @StrictThrottle()
   @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Created exam session successfully')
   @ApiOperation({ summary: 'Create a new exam session (Only Teacher)' })
@@ -84,6 +86,7 @@ export class ExamSessionController {
   }
 
   @Patch(':id')
+  @StrictThrottle()
   @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Updated exam session successfully')
   @ApiOperation({ summary: 'Update an exam session (Only Teacher)' })
@@ -101,6 +104,7 @@ export class ExamSessionController {
   }
 
   @Delete(':id')
+  @StrictThrottle()
   @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Deleted exam session successfully')
   @ApiOperation({

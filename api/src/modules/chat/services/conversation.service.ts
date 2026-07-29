@@ -128,9 +128,10 @@ export class ConversationService {
   }
 
   async isUserParticipant(convId: string, userId: string): Promise<boolean> {
-    const count = await this.prisma.participant.count({
-      where: { conversationId: convId, userId },
+    const participant = await this.prisma.participant.findUnique({
+      where: { conversationId_userId: { conversationId: convId, userId } },
+      select: { conversationId: true },
     });
-    return count > 0;
+    return !!participant;
   }
 }

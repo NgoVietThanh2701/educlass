@@ -3,13 +3,14 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as bycrypt from 'bcrypt';
 import { PrismaService } from '@prisma/prisma.service';
 import { AppException } from '@common/exceptions/app.exception';
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
+  private readonly logger = new Logger(RefreshTokenStrategy.name);
   constructor(
     configService: ConfigService,
     private readonly prisma: PrismaService,
@@ -24,7 +25,7 @@ export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refres
 
   //validate fresher token
   async validate(req: Request, payload: { sub: string }) {
-    console.log('RefreshTokenStrategy.validate called');
+    this.logger.log('RefreshTokenStrategy.validate called');
 
     const authHeader = req.headers['authorization'];
     if (!authHeader) {

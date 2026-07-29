@@ -44,6 +44,8 @@ export class ClassService {
           select: classSelect,
         });
 
+        await this.conversationService.createOrGetGroup(newClass.id, teacherId);
+
         return toClassResponse(newClass);
       } catch (error) {
         if (

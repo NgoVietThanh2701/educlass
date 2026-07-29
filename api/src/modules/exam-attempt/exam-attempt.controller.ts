@@ -10,6 +10,7 @@ import { CreateAttemptDto } from './dto/create-attempt.dto';
 import { AttemptResponseDto } from './dto/attempt-response.dto';
 import { SuccessMessage } from '@common/decorators/message.decorator';
 import { SyncAnswersDto } from './dto/sync-answers.dto';
+import { StrictThrottle } from '@common/decorators/custom-throttler.decorator';
 
 @ApiTags('Exam-Attempts')
 @ApiBearerAuth('JWT-auth')
@@ -19,6 +20,7 @@ export class ExamAttemptController {
   constructor(private readonly attemptService: ExamAttemptService) {}
 
   @Post('start')
+  @StrictThrottle()
   @RolesUser(RoleUser.STUDENT)
   @SuccessMessage('Start attempt sucessfully')
   @ApiOperation({ summary: 'Start a new attempt for a session (Only Student)' })
@@ -34,6 +36,7 @@ export class ExamAttemptController {
   }
 
   @Post(':id/submit')
+  @StrictThrottle()
   @SuccessMessage('Submit answers and finish attempt sucessfully')
   @RolesUser(RoleUser.STUDENT)
   @ApiOperation({ summary: 'Submit answers and finish attempt (Only Student)' })

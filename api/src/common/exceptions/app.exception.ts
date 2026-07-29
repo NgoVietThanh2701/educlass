@@ -12,6 +12,10 @@ export class AppException extends HttpException {
     );
   }
 
+  static wsException(message: string, code: ErrorCodeType = ErrorCode.WS_EXCEPTION): AppException {
+    return new AppException(HttpStatus.BAD_REQUEST, code, message);
+  }
+
   static badRequest(message: string, code: ErrorCodeType = ErrorCode.BAD_REQUEST): AppException {
     return new AppException(HttpStatus.BAD_REQUEST, code, message);
   }

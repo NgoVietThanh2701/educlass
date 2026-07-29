@@ -5,9 +5,9 @@ import { RoleUser } from '@prisma/client';
 import { ConversationService } from '../services/conversation.service';
 import { CreateDirectConversationDto } from '../dto/create-direct-conversation.dto';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
-import { CreateGroupConversationDto } from '../dto/create-group-conversation.dto';
 import { RolesUser } from '@common/decorators/roles.decorator';
 import { UpdatePermissionDto } from '../dto/update-permission.dto';
+import { ModerateThrottle, StrictThrottle } from '@common/decorators/custom-throttler.decorator';
 
 @ApiTags('Conversations')
 @ApiBearerAuth('JWT-auth')
@@ -17,6 +17,7 @@ export class ConversationController {
   constructor(private readonly conversationService: ConversationService) {}
 
   @Post('direct')
+  @ModerateThrottle()
   @ApiOperation({ summary: 'Create or get a direct conversation with another user' })
   @ApiResponse({
     status: 201,
@@ -26,11 +27,11 @@ export class ConversationController {
     return this.conversationService.createOrGetDirect(userId, dto.targetUserId);
   }
 
-  @Post('group')
-  @ApiOperation({ summary: 'Create or get a group conversation for a class' })
-  createGroup(@CurrentUser('id') userId: string, @Body() dto: CreateGroupConversationDto) {
-    return this.conversationService.createOrGetGroup(dto.classId, userId);
-  }
+  // @Post('group')
+  // @ApiOperation({ summary: 'Create or get a group conversation for a class' })
+  // createGroup(@CurrentUser('id') userId: string, @Body() dto: CreateGroupConversationDto) {
+  //   return this.conversationService.createOrGetGroup(dto.classId, userId);
+  // }
 
   @Get()
   @ApiOperation({ summary: 'Get all conversations for current user' })
@@ -45,6 +46,7 @@ export class ConversationController {
   }
 
   @Patch(':id/permission')
+  @StrictThrottle()
   @RolesUser(RoleUser.TEACHER)
   @ApiOperation({ summary: 'Update group message permission (teacher only)' })
   updatePermission(

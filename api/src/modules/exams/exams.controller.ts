@@ -25,6 +25,7 @@ import { AddOptionDto } from './dto/add-option.dto';
 import { UpdateOptionDto } from './dto/update-option.dto';
 import { SuccessMessage } from '@common/decorators/message.decorator';
 import { ExamDetailResponseDto } from './dto/exam-detail-response.dto';
+import { StrictThrottle } from '@common/decorators/custom-throttler.decorator';
 
 @ApiTags('Exams (Only Teacher)')
 @ApiBearerAuth('JWT-auth')
@@ -36,6 +37,7 @@ export class ExamsController {
 
   // ========== EXAM ==========
   @Post()
+  @StrictThrottle()
   @SuccessMessage('Created exam successfully')
   @ApiOperation({ summary: 'Create a new exam' })
   @ApiResponse({
@@ -77,6 +79,7 @@ export class ExamsController {
   }
 
   @Patch(':examId')
+  @StrictThrottle()
   @SuccessMessage('Updated exam successfully')
   @ApiOperation({ summary: 'Update an exam' })
   @ApiResponse({
@@ -93,6 +96,7 @@ export class ExamsController {
   }
 
   @Patch(':examId/status')
+  @StrictThrottle()
   @SuccessMessage('Updated exam status successfully')
   @ApiOperation({ summary: 'Change exam status' })
   @ApiResponse({
@@ -110,6 +114,7 @@ export class ExamsController {
 
   // ========== QUESTION ==========
   @Post(':examId/questions')
+  @StrictThrottle()
   @SuccessMessage('Added question successfully')
   @ApiOperation({ summary: 'Add a question to an exam' })
   @ApiResponse({
@@ -126,6 +131,7 @@ export class ExamsController {
   }
 
   @Patch(':examId/questions/:questionId')
+  @StrictThrottle()
   @SuccessMessage('Updated question successfully')
   @ApiOperation({ summary: 'Update a question' })
   @ApiResponse({
@@ -143,6 +149,7 @@ export class ExamsController {
   }
 
   @Delete(':examId/questions/:questionId')
+  @StrictThrottle()
   @SuccessMessage('Deleted question successfully')
   @ApiOperation({ summary: 'Delete a question' })
   @ApiResponse({
@@ -159,6 +166,7 @@ export class ExamsController {
 
   // ========== OPTION ==========
   @Post(':examId/questions/:questionId/options')
+  @StrictThrottle()
   @SuccessMessage('Added option successfully')
   @ApiOperation({ summary: 'Add an option to a question' })
   @ApiResponse({
@@ -176,6 +184,7 @@ export class ExamsController {
   }
 
   @Patch(':examId/questions/:questionId/options/:optionId')
+  @StrictThrottle()
   @SuccessMessage('Updated option successfully')
   @ApiOperation({ summary: 'Update an option' })
   @ApiResponse({
@@ -194,6 +203,7 @@ export class ExamsController {
   }
 
   @Delete(':examId/questions/:questionId/options/:optionId')
+  @StrictThrottle()
   @SuccessMessage('Deleted option successfully')
   @ApiOperation({ summary: 'Delete an option' })
   @ApiResponse({

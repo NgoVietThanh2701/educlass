@@ -9,32 +9,48 @@ import {
 } from '@nestjs/websockets';
 import { Server } from 'socket.io';
 import { MessageService } from './services/message.service';
-import { UseGuards } from '@nestjs/common';
-import { WsJwtAuthGuard } from './guards/ws-jwt-auth.guard';
-import type { AuthenticatedSocket } from '@common/interfaces/auth-user.interface';
+import type { AuthenticatedSocket, JwtPayload } from '@common/interfaces/auth-user.interface';
 import { SendMessageDto } from './dto/send-message.dto';
 import { AppConfig } from '@common/constants/app-config.constant';
 import { ConversationService } from './services/conversation.service';
+import { JwtService } from '@nestjs/jwt';
+import { AuthValidationService } from '@modules/auth/auth-validation.service';
+import { Logger } from '@nestjs/common';
+import { AppException } from '@common/exceptions/app.exception';
 
 @WebSocketGateway({ namespace: 'chat', cors: { origin: AppConfig.APP_URL, credentials: true } })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger(ChatGateway.name);
   @WebSocketServer()
   server: Server;
 
   constructor(
     private readonly messageService: MessageService,
     private readonly conversationService: ConversationService,
+    private readonly jwtService: JwtService,
+    private readonly authValidationService: AuthValidationService,
   ) {}
 
-  handleConnection(client: AuthenticatedSocket) {
-    console.log(`Client connected: ${client.id}`);
+  async handleConnection(client: AuthenticatedSocket) {
+    try {
+      const token = client.handshake.auth?.token ?? client.handshake.query?.token;
+      if (typeof token !== 'string') {
+        throw new Error('No token provided');
+      }
+      const payload = this.jwtService.verify<JwtPayload>(token);
+      client.user = await this.authValidationService.validateJwtPayload(payload);
+      this.logger.log(`Client connected: ${client.id} (user: ${client.user.id})`);
+    } catch (err) {
+      const error = err as Error;
+      this.logger.error('Socket authentication failed:', error.message);
+      client.disconnect();
+    }
   }
 
   handleDisconnect(client: AuthenticatedSocket) {
-    console.log(`Client disconnected: ${client.id}`);
+    this.logger.log(`Client disconnected: ${client.id}`);
   }
 
-  @UseGuards(WsJwtAuthGuard)
   @SubscribeMessage('joinConversation')
   async handleJoinConversation(
     @ConnectedSocket() client: AuthenticatedSocket,
@@ -45,15 +61,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.user.id,
     );
     if (!isParticipant) {
-      client.emit('error', { message: 'You are not a participant of this conversation' });
-      return;
+      throw AppException.wsException('You are not a participant of this conversation');
     }
 
     await client.join(`conversation:${data.conversationId}`);
     client.emit('joined', { conversationId: data.conversationId });
   }
 
-  @UseGuards(WsJwtAuthGuard)
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
     @ConnectedSocket() client: AuthenticatedSocket,

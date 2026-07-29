@@ -23,6 +23,7 @@ import { SuccessMessage } from '@common/decorators/message.decorator';
 import { UpdateClassDto } from './dto/update-class.dto';
 import { AddStudentDto } from './dto/add-student.dto';
 import { CreateStudentDto, CreateStudentResponseDto } from './dto/student.dto';
+import { StrictThrottle } from '@common/decorators/custom-throttler.decorator';
 
 @ApiTags('Classes')
 @ApiBearerAuth('JWT-auth')
@@ -33,6 +34,7 @@ export class ClassController {
 
   // Create class (Only Teacher)
   @Post()
+  @StrictThrottle()
   @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Created class successfully')
   @ApiOperation({ summary: 'Create new class (Only teacher)' })
@@ -87,6 +89,7 @@ export class ClassController {
 
   // Update class (Only Teacher)
   @Patch(':id')
+  @StrictThrottle()
   @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Updated class successfully')
   @ApiOperation({ summary: 'Update class (Only teacher)' })
@@ -109,6 +112,7 @@ export class ClassController {
 
   // Archive class (Only Teacher)
   @Delete(':id')
+  @StrictThrottle()
   @RolesUser(RoleUser.TEACHER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @SuccessMessage('Archived class successfully')
@@ -127,6 +131,7 @@ export class ClassController {
 
   // Add student to class (Only Teacher)
   @Post(':id/students')
+  @StrictThrottle()
   @RolesUser(RoleUser.TEACHER)
   @HttpCode(HttpStatus.CREATED)
   @SuccessMessage('Added student successfully')
@@ -149,6 +154,7 @@ export class ClassController {
 
   // Remove student from class (Only Teacher)
   @Delete(':id/students/:studentId')
+  @StrictThrottle()
   @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Removed student successfully')
   @ApiOperation({ summary: 'Remove student from class (Only teacher)' })
@@ -186,6 +192,7 @@ export class ClassController {
 
   // Create student and add to this class (Only teacher)
   @Post(':id/students/create')
+  @StrictThrottle()
   @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Created student successfully')
   @ApiOperation({
