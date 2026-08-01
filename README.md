@@ -45,6 +45,7 @@ The backend is organized as a modular NestJS application.
 - `src/modules/chat/` — conversation and message handling, attachment upload, real-time gateway
 - `src/modules/mail/` — email templates, mail service, and SMTP verification
 - `src/modules/otp/` — OTP generation and verification flow
+- `src/modules/redis/` — Redis caching, save OTP
 - `src/prisma/` — database schema and migration setup
 
 ## Technology stack
@@ -58,6 +59,7 @@ The backend is organized as a modular NestJS application.
 - **Rate limiting:** `@nestjs/throttler`
 - **Validation:** `class-validator`, `class-transformer`, Nest validation pipe
 - **Task scheduling:** `@nestjs/schedule`
+- **Cache / messaging:** Redis via `ioredis`
 
 ## Libraries used
 
