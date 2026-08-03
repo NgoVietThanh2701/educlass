@@ -10,7 +10,7 @@ export class AuthValidationService {
   async validateJwtPayload(payload: JwtPayload): Promise<AuthUser> {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, email: true, archivedAt: true, role: true, mustChangePassword: true },
+      select: { id: true, email: true, archivedAt: true, role: true },
     });
 
     if (!user || user.archivedAt) {
@@ -21,7 +21,6 @@ export class AuthValidationService {
       id: user.id,
       email: user.email,
       role: user.role,
-      mustChangePassword: user.mustChangePassword,
     };
   }
 }

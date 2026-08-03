@@ -1,5 +1,4 @@
 // Jwt auth guard
-import { SKIP_PASSWORD_CHECK_KEY } from '@common/decorators/skip-password-check';
 import { AppException } from '@common/exceptions/app.exception';
 import { ExecutionContext, Injectable, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -16,7 +15,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return super.canActivate(context);
   }
 
-  handleRequest(err: Error, user: any, info: any, context: ExecutionContext) {
+  handleRequest(err: Error, user: any, info: any) {
     // Xử lý lỗi xác thực (token sai, hết hạn...)
     if (err || !user) {
       this.logger.warn(
@@ -25,14 +24,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         }`,
       );
       throw AppException.unauthorized('Token is missing or invalid');
-    }
-    const skipPasswordCheck = this.reflector.getAllAndOverride<boolean>(SKIP_PASSWORD_CHECK_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-
-    if (user.mustChangePassword && !skipPasswordCheck) {
-      throw AppException.forbidden('You must change your password before accessing this resource');
     }
     return user;
   }

@@ -21,8 +21,5 @@ export class UserResponseDto {
   role: RoleUser;
 
   @ApiProperty()
-  mustChangePassword: boolean;
-
-  @ApiProperty()
   createdAt: Date;
 }

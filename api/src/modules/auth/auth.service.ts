@@ -29,9 +29,9 @@ export class AuthService {
     private readonly userService: UsersService,
   ) {}
 
-  // Register a new teacher
+  // Register a new teacher or student
   async register(registerDto: RegisterDto): Promise<UserResponseDto> {
-    const { email, fullName, password } = registerDto;
+    const { email, fullName, password, role } = registerDto;
 
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
@@ -42,11 +42,12 @@ export class AuthService {
     }
 
     try {
-      // 1. Get teacher Number from sequence
-      const teacherNo = await this.prisma.nextSequence(SEQUENCE.TEACHER);
-      // 2. Generate username using the teacher number
-      const userName = UserNameUtil.teacher(teacherNo);
-      // 3. Hash the password
+      const sequenceName = role === RoleUser.TEACHER ? SEQUENCE.TEACHER : SEQUENCE.STUDENT;
+      const sequenceNo = await this.prisma.nextSequence(sequenceName);
+      const userName =
+        role === RoleUser.TEACHER
+          ? UserNameUtil.teacher(sequenceNo)
+          : UserNameUtil.student(sequenceNo);
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
       const user = await this.prisma.user.create({
         data: {
@@ -54,7 +55,7 @@ export class AuthService {
           fullName,
           userName,
           passwordHash,
-          role: RoleUser.TEACHER,
+          role,
         },
         select: userSelect,
       });
@@ -135,8 +136,8 @@ export class AuthService {
       throw AppException.unauthorized('Invalid credentials');
     }
 
-    if ((!user.emailVerified && user.role === RoleUser.TEACHER) || user.archivedAt)
-      throw AppException.forbidden('Please verified email or user is disabled');
+    if (!user.emailVerified || user.archivedAt)
+      throw AppException.forbidden('Please verify your email or account is disabled');
 
     const tokens = await this.generateTokens(user.id, user.userName);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
@@ -155,16 +156,11 @@ export class AuthService {
       select: {
         id: true,
         passwordHash: true,
-        mustChangePassword: true,
       },
     });
 
     if (!user) {
       throw AppException.notFound('User not found');
-    }
-
-    if (!user.mustChangePassword) {
-      throw AppException.badRequest('Password change is not required');
     }
 
     const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
@@ -179,7 +175,6 @@ export class AuthService {
       where: { id: user.id },
       data: {
         passwordHash,
-        mustChangePassword: false,
         refreshToken: null,
       },
     });

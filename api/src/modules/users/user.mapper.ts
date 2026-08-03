@@ -6,7 +6,6 @@ export const userSelect = Prisma.validator<Prisma.UserSelect>()({
   email: true,
   userName: true,
   fullName: true,
-  mustChangePassword: true,
   role: true,
   balance: true,
   createdAt: true,
@@ -23,7 +22,6 @@ export function toUserResponse(user: UserWithRelations): UserResponseDto {
     userName: user.userName,
     fullName: user.fullName,
     balance: user.balance.toNumber(),
-    mustChangePassword: user.mustChangePassword,
     role: user.role,
     createdAt: user.createdAt,
   };

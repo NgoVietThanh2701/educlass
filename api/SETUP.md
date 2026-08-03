@@ -14,9 +14,25 @@ npx prisma migrate reset
 npx prisma migrate dev --create-only --name init-project
 ```
 
-> **Note**
->
 > Sau khi tạo migration, hãy mở file `migration.sql` và thêm các câu lệnh tạo sequence.
+
+### Create student and teacher Sequence
+
+```sql
+CREATE SEQUENCE teacher_seq
+START WITH 1
+INCREMENT BY 1
+NO MINVALUE
+NO MAXVALUE
+CACHE 1;
+
+CREATE SEQUENCE student_seq
+START WITH 1
+INCREMENT BY 1
+NO MINVALUE
+NO MAXVALUE
+CACHE 1;
+```
 
 ### Apply migration
 
@@ -43,24 +59,6 @@ npx prisma db seed
 ---
 
 ## 3. PostgreSQL Sequences
-
-### Create student and teacher Sequence
-
-```sql
-CREATE SEQUENCE teacher_seq
-START WITH 1
-INCREMENT BY 1
-NO MINVALUE
-NO MAXVALUE
-CACHE 1;
-
-CREATE SEQUENCE student_seq
-START WITH 1
-INCREMENT BY 1
-NO MINVALUE
-NO MAXVALUE
-CACHE 1;
-```
 
 ---
 

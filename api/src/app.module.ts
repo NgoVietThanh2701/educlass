@@ -8,13 +8,10 @@ import { OtpModule } from './modules/otp/otp.module';
 import { UsersModule } from './modules/users/users.module';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ResponseInterceptor } from '@common/interceptors/response.interceptor';
-import { ClassModule } from './modules/class/class.module';
-import { ExamsModule } from './modules/exams/exams.module';
-import { ExamSessionModule } from './modules/exam-session/exam-session.module';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ExamAttemptModule } from './modules/exam-attempt/exam-attempt.module';
-import { ChatModule } from './modules/chat/chat.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AssessmentsModule } from './modules/assessments/assessments.module';
+import { AssessmentAttemptModule } from './modules/assessment-attempt/assessment-attempt.module';
 
 @Module({
   imports: [
@@ -32,11 +29,8 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     MailModule,
     OtpModule,
     UsersModule,
-    ClassModule,
-    ExamsModule,
-    ExamSessionModule,
-    ExamAttemptModule,
-    ChatModule,
+    AssessmentsModule,
+    AssessmentAttemptModule,
   ],
   controllers: [],
   providers: [

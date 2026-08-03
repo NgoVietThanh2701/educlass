@@ -16,19 +16,19 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // Register a new teacher
+  // Register a new teacher or student
   @Post('register')
   @StrictThrottle()
   @HttpCode(HttpStatus.CREATED)
-  @SuccessMessage('The teacher has been successfully registered')
+  @SuccessMessage('The account has been successfully registered')
   @ApiOperation({
-    summary: 'Register a new teacher',
-    description: 'Create a new teacher account and returns access and refresh tokens',
+    summary: 'Register a new teacher or student',
+    description: 'Create a new teacher or student account and send OTP verification',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'The teacher has been successfully registered',
-    type: AuthResponseDto,
+    description: 'The account has been successfully registered',
+    type: UserResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
