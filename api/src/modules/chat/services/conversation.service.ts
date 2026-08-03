@@ -33,9 +33,9 @@ export class ConversationService {
     return toConversationResponse(newConv);
   }
 
-  async createOrGetGroup(classId: string, userId: string) {
+  async createOrGetGroup(courseId: string, userId: string) {
     const existing = await this.prisma.conversation.findUnique({
-      where: { classId },
+      where: { courseId },
       select: conversationSelect,
     });
     if (existing) {
@@ -47,24 +47,21 @@ export class ConversationService {
       return toConversationResponse(updated!);
     }
 
-    const classWithMembers = await this.prisma.class.findUnique({
-      where: { id: classId },
-      select: {
-        teacherId: true,
-        classStudents: { select: { studentId: true } },
-      },
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: { teacherId: true, enrollments: { select: { studentId: true } } },
     });
-    if (!classWithMembers) throw AppException.notFound('Class not found');
+    if (!course) throw AppException.notFound('Course not found');
 
     const memberIds = [
-      classWithMembers.teacherId,
-      ...classWithMembers.classStudents.map((cs) => cs.studentId),
+      course.teacherId,
+      ...course.enrollments.map((enrollment) => enrollment.studentId),
     ];
 
     const newConv = await this.prisma.conversation.create({
       data: {
         type: ConversationType.GROUP,
-        classId,
+        courseId,
         messagePermission: GroupMessagePermission.ALL,
         participants: {
           create: memberIds.map((id) => ({ userId: id })),
@@ -75,9 +72,9 @@ export class ConversationService {
     return toConversationResponse(newConv);
   }
 
-  async addUserToGroupChat(classId: string, userId: string) {
+  async addUserToGroupChat(courseId: string, userId: string) {
     const conv = await this.prisma.conversation.findUnique({
-      where: { classId },
+      where: { courseId },
       select: { id: true },
     });
     if (!conv) return;
@@ -87,11 +84,11 @@ export class ConversationService {
   async updatePermission(convId: string, teacherId: string, permission: GroupMessagePermission) {
     const conv = await this.prisma.conversation.findUnique({
       where: { id: convId },
-      select: { class: { select: { teacherId: true } } },
+      select: { course: { select: { teacherId: true } } },
     });
     if (!conv) throw AppException.notFound('Conversation not found');
-    if (conv.class?.teacherId !== teacherId)
-      throw AppException.forbidden('Only class teacher can change permission');
+    if (conv.course?.teacherId !== teacherId)
+      throw AppException.forbidden('Only course teacher can change permission');
 
     const updated = await this.prisma.conversation.update({
       where: { id: convId },

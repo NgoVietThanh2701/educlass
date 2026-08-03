@@ -128,14 +128,14 @@ model User {
 
 // ==================== COURSE ====================
 model Course {
-  id                String       @id @default(uuid())
-  teacherId         String
-  title             String
-  slug              String       @unique
-  shortDescription  String?
-  description       String?
-  thumbnailUrl      String?
-  level             CourseLevel  @default(ALL)
+  id                   String       @id @default(uuid())
+  teacherId            String
+  title                String
+  slug                 String       @unique
+  shortDescription     String?
+  description          String?
+  thumbnailObjectKey   String?
+  level                CourseLevel  @default(ALL)
   language          String       @default("vi")
   price             Decimal      @default(0) @db.Decimal(10, 2)
   status            CourseStatus @default(DRAFT)

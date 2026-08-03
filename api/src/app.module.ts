@@ -12,6 +12,10 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AssessmentsModule } from './modules/assessments/assessments.module';
 import { AssessmentAttemptModule } from './modules/assessment-attempt/assessment-attempt.module';
+import { CoursesModule } from './modules/courses/courses.module';
+import { SectionsModule } from './modules/sections/sections.module';
+import { LessonsModule } from './modules/lessons/lessons.module';
+import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
 
 @Module({
   imports: [
@@ -31,6 +35,10 @@ import { AssessmentAttemptModule } from './modules/assessment-attempt/assessment
     UsersModule,
     AssessmentsModule,
     AssessmentAttemptModule,
+    CoursesModule,
+    SectionsModule,
+    LessonsModule,
+    EnrollmentsModule,
   ],
   controllers: [],
   providers: [

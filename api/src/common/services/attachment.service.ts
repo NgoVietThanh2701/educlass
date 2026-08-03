@@ -1,8 +1,11 @@
-// src/modules/chat/services/attachment.service.ts
 import { AppException } from '@common/exceptions/app.exception';
 import { Injectable } from '@nestjs/common';
 import { UploadApiResponse, v2 as cloudinary } from 'cloudinary';
-import { CHAT_ALLOWED_MIME_TYPES, CHAT_MAX_UPLOAD_SIZE } from '../chat.constants';
+import {
+  UPLOAD_ALLOWED_MIME_TYPES,
+  UPLOAD_IMAGE_MIME_TYPES,
+  UPLOAD_MAX_FILE_SIZE,
+} from '@common/constants/upload.constant';
 
 @Injectable()
 export class AttachmentService {
@@ -16,24 +19,19 @@ export class AttachmentService {
 
   async uploadFile(
     file: Express.Multer.File,
-  ): Promise<{ objectKey: string; url?: string; resourceType?: string }> {
-    // Basic validations: ensure file present, size and mime type
-    if (!file || !file.buffer) {
-      throw AppException.badRequest('No file provided');
-    }
-
-    if (file.size > CHAT_MAX_UPLOAD_SIZE) {
-      throw AppException.badRequest('File size exceeds allowed limit');
-    }
-
-    if (!CHAT_ALLOWED_MIME_TYPES.has(file.mimetype)) {
-      throw AppException.badRequest('File type is not allowed');
-    }
+    folder = 'uploads',
+    allowedMimeTypes: Set<string> = UPLOAD_ALLOWED_MIME_TYPES,
+  ): Promise<{
+    objectKey: string;
+    url?: string;
+    resourceType?: string;
+  }> {
+    this.validateFile(file, allowedMimeTypes);
 
     return new Promise<{ objectKey: string; url: string; resourceType: string }>(
       (resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
-          { folder: 'chat', resource_type: 'auto' },
+          { folder, resource_type: 'auto' },
           (error, result: UploadApiResponse | undefined) => {
             if (error || !result) {
               reject(AppException.internal('Failed to upload file or result undefined'));
@@ -46,8 +44,27 @@ export class AttachmentService {
             }
           },
         );
+
         uploadStream.end(file.buffer);
       },
     );
+  }
+
+  async uploadImage(file: Express.Multer.File, folder = 'course-thumbnails') {
+    return this.uploadFile(file, folder, UPLOAD_IMAGE_MIME_TYPES);
+  }
+
+  private validateFile(file: Express.Multer.File, allowedMimeTypes: Set<string>) {
+    if (!file || !file.buffer) {
+      throw AppException.badRequest('No file provided');
+    }
+
+    if (file.size > UPLOAD_MAX_FILE_SIZE) {
+      throw AppException.badRequest('File size exceeds allowed limit');
+    }
+
+    if (!allowedMimeTypes.has(file.mimetype)) {
+      throw AppException.badRequest('File type is not allowed');
+    }
   }
 }

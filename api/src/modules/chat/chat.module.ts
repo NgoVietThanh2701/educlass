@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
+import { AttachmentService } from '@common/services/attachment.service';
 import { ConversationService } from './services/conversation.service';
 import { MessageService } from './services/message.service';
-import { AttachmentService } from './services/attachment.service';
 import { ChatGateway } from './chat.gateway';
 import { ConversationController } from './controllers/conversation.controller';
 import { MessageController } from './controllers/message.controller';

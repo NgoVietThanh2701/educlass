@@ -19,19 +19,19 @@ export class MessageService {
         where: { id: dto.conversationId },
         include: {
           participants: { where: { userId } },
-          class: { select: { teacherId: true } },
+          course: { select: { teacherId: true } },
         },
       });
       if (!conv) throw AppException.notFound('Conversation not found');
       if (conv.participants.length === 0) throw AppException.forbidden('You are not a participant');
 
       if (conv.type === 'GROUP' && conv.messagePermission === GroupMessagePermission.TEACHER_ONLY) {
-        const groupClass = await tx.class.findUnique({
-          where: { id: conv.classId! },
+        const course = await tx.course.findUnique({
+          where: { id: conv.courseId! },
           select: { teacherId: true },
         });
-        if (!groupClass || groupClass.teacherId !== userId) {
-          throw AppException.forbidden('Only the class teacher can send messages in this group');
+        if (!course || course.teacherId !== userId) {
+          throw AppException.forbidden('Only the course teacher can send messages in this group');
         }
       }
 

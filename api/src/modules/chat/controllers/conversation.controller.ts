@@ -33,9 +33,9 @@ export class ConversationController {
   }
 
   // @Post('group')
-  // @ApiOperation({ summary: 'Create or get a group conversation for a class' })
+  // @ApiOperation({ summary: 'Create or get a group conversation for a course' })
   // createGroup(@CurrentUser('id') userId: string, @Body() dto: CreateGroupConversationDto) {
-  //   return this.conversationService.createOrGetGroup(dto.classId, userId);
+  //   return this.conversationService.createOrGetGroup(dto.courseId, userId);
   // }
 
   @Get()

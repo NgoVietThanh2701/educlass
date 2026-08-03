@@ -2,7 +2,7 @@ import { IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateGroupConversationDto {
-  @ApiProperty({ description: 'Class ID' })
+  @ApiProperty({ description: 'Course ID' })
   @IsString()
-  classId: string;
+  courseId: string;
 }

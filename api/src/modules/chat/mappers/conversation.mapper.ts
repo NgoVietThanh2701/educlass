@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 export const conversationSelect = Prisma.validator<Prisma.ConversationSelect>()({
   id: true,
   type: true,
-  classId: true,
+  courseId: true,
   messagePermission: true,
   createdAt: true,
   updatedAt: true,
@@ -31,7 +31,7 @@ export function toConversationResponse(conv: ConversationWithRelations) {
   return {
     id: conv.id,
     type: conv.type,
-    classId: conv.classId,
+    courseId: conv.courseId,
     messagePermission: conv.messagePermission,
     participants: conv.participants.map((p) => ({
       userId: p.userId,

@@ -12,13 +12,13 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MessageService } from '../services/message.service';
-import { AttachmentService } from '../services/attachment.service';
+import { AttachmentService } from '@common/services/attachment.service';
 import { SendMessageDto } from '../dto/send-message.dto';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { RelaxedThrottle } from '@common/decorators/custom-throttler.decorator';
 import { AppException } from '@common/exceptions/app.exception';
-import { CHAT_ALLOWED_MIME_TYPES, CHAT_MAX_UPLOAD_SIZE } from '../chat.constants';
+import { UPLOAD_ALLOWED_MIME_TYPES, UPLOAD_MAX_FILE_SIZE } from '@common/constants/upload.constant';
 
 @ApiTags('Messages')
 @ApiBearerAuth('JWT-auth')
@@ -65,12 +65,11 @@ export class MessageController {
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: CHAT_MAX_UPLOAD_SIZE },
+      limits: { fileSize: UPLOAD_MAX_FILE_SIZE },
       fileFilter: (req, file, cb) => {
-        if (CHAT_ALLOWED_MIME_TYPES.has(file.mimetype)) {
+        if (UPLOAD_ALLOWED_MIME_TYPES.has(file.mimetype)) {
           cb(null, true);
         } else {
-          // Reject file silently (no file will be provided), controller will respond with error
           cb(null, false);
         }
       },
@@ -81,13 +80,13 @@ export class MessageController {
       throw AppException.badRequest('No file uploaded or file type not allowed');
     }
 
-    if (file.size > CHAT_MAX_UPLOAD_SIZE) {
+    if (file.size > UPLOAD_MAX_FILE_SIZE) {
       throw AppException.badRequest('File size exceeds the allowed limit');
     }
-    if (!CHAT_ALLOWED_MIME_TYPES.has(file.mimetype)) {
+    if (!UPLOAD_ALLOWED_MIME_TYPES.has(file.mimetype)) {
       throw AppException.badRequest('File type is not allowed');
     }
 
-    return this.attachmentService.uploadFile(file);
+    return this.attachmentService.uploadFile(file, 'chat');
   }
 }
