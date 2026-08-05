@@ -21,7 +21,7 @@ export class EnrollmentsController {
   @Post('courses/:courseId')
   @RolesUser(RoleUser.STUDENT)
   @SuccessMessage('Enrolled successfully')
-  @ApiOperation({ summary: 'Enroll student to a course' })
+  @ApiOperation({ summary: 'Enroll student to a course (Only Student)' })
   @ApiResponse({
     status: 201,
     description: 'Enrollment created successfully',
@@ -34,7 +34,7 @@ export class EnrollmentsController {
   @Get('me')
   @RolesUser(RoleUser.STUDENT)
   @SuccessMessage('Retrieved my enrollments successfully')
-  @ApiOperation({ summary: 'Get all enrollments of current student' })
+  @ApiOperation({ summary: 'Get all enrollments of current student (Only Student)' })
   @ApiResponse({ status: 200, type: EnrollmentResponseDto, isArray: true })
   findMyEnrollments(@CurrentUser('id') studentId: string) {
     return this.enrollmentsService.findMyEnrollments(studentId);
@@ -43,7 +43,7 @@ export class EnrollmentsController {
   @Get('me/progress')
   @RolesUser(RoleUser.STUDENT)
   @SuccessMessage('Retrieved my course progress successfully')
-  @ApiOperation({ summary: 'Get aggregated learning progress for all enrolled courses' })
+  @ApiOperation({ summary: 'Get aggregated learning progress for all enrolled courses (Only Student)' })
   @ApiResponse({ status: 200, type: CourseProgressResponseDto, isArray: true })
   getMyCourseProgress(@CurrentUser('id') studentId: string) {
     return this.enrollmentsService.getMyCourseProgress(studentId);
@@ -52,7 +52,7 @@ export class EnrollmentsController {
   @Get(':courseId/progress')
   @RolesUser(RoleUser.STUDENT)
   @SuccessMessage('Retrieved course progress successfully')
-  @ApiOperation({ summary: 'Get aggregated learning progress for one course' })
+  @ApiOperation({ summary: 'Get aggregated learning progress for one course (Only Student)' })
   @ApiResponse({ status: 200, type: CourseProgressResponseDto })
   getCourseProgress(@Param('courseId') courseId: string, @CurrentUser('id') studentId: string) {
     return this.enrollmentsService.getCourseProgress(studentId, courseId);

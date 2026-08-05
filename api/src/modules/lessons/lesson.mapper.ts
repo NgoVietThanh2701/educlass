@@ -13,6 +13,30 @@ export const lessonAttachmentSelect = Prisma.validator<Prisma.LessonAttachmentSe
   createdAt: true,
 });
 
+export const lessonListSelect = Prisma.validator<Prisma.LessonSelect>()({
+  id: true,
+  sectionId: true,
+  title: true,
+  description: true,
+  type: true,
+  order: true,
+  durationSeconds: true,
+  isPreview: true,
+  unlockRule: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const lessonPublicOutlineSelect = Prisma.validator<Prisma.LessonSelect>()({
+  id: true,
+  title: true,
+  description: true,
+  type: true,
+  order: true,
+  durationSeconds: true,
+  isPreview: true,
+});
+
 export const lessonSelect = Prisma.validator<Prisma.LessonSelect>()({
   id: true,
   sectionId: true,
@@ -38,13 +62,49 @@ export const lessonSelect = Prisma.validator<Prisma.LessonSelect>()({
   },
 });
 
+export type LessonListMapperInput = Prisma.LessonGetPayload<{
+  select: typeof lessonListSelect;
+}>;
+
 export type LessonMapperInput = Prisma.LessonGetPayload<{
   select: typeof lessonSelect;
+}>;
+
+export type LessonPublicOutlineMapperInput = Prisma.LessonGetPayload<{
+  select: typeof lessonPublicOutlineSelect;
 }>;
 
 export type LessonAttachmentMapperInput = Prisma.LessonAttachmentGetPayload<{
   select: typeof lessonAttachmentSelect;
 }>;
+
+export function toLessonListItem(lesson: LessonListMapperInput) {
+  return {
+    id: lesson.id,
+    sectionId: lesson.sectionId,
+    title: lesson.title,
+    description: lesson.description,
+    type: lesson.type,
+    order: lesson.order,
+    durationSeconds: lesson.durationSeconds,
+    isPreview: lesson.isPreview,
+    unlockRule: lesson.unlockRule,
+    createdAt: lesson.createdAt,
+    updatedAt: lesson.updatedAt,
+  };
+}
+
+export function toLessonPublicOutline(lesson: LessonPublicOutlineMapperInput) {
+  return {
+    id: lesson.id,
+    title: lesson.title,
+    description: lesson.description,
+    type: lesson.type,
+    order: lesson.order,
+    durationSeconds: lesson.durationSeconds,
+    isPreview: lesson.isPreview,
+  };
+}
 
 export function toLessonResponse(lesson: LessonMapperInput): LessonResponseDto {
   return {

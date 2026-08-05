@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CourseLevel, CourseStatus } from '@prisma/client';
 
-export class CourseResponseDto {
+export class CourseListItemDto {
   @ApiProperty()
   id: string;
 
@@ -18,9 +18,6 @@ export class CourseResponseDto {
   shortDescription?: string | null;
 
   @ApiPropertyOptional()
-  description?: string | null;
-
-  @ApiPropertyOptional()
   thumbnailUrl?: string | null;
 
   @ApiProperty({ enum: CourseLevel })
@@ -32,27 +29,23 @@ export class CourseResponseDto {
   @ApiProperty()
   price: number;
 
-  @ApiProperty({ enum: CourseStatus })
-  status: CourseStatus;
-
   @ApiPropertyOptional()
   publishedAt?: Date | null;
 
   @ApiPropertyOptional()
   estimatedDuration?: number | null;
 
-  @ApiPropertyOptional()
-  requirements?: string | null;
-
-  @ApiPropertyOptional()
-  learningOutcomes?: string | null;
-
-  @ApiPropertyOptional()
-  archivedAt?: Date | null;
-
   @ApiProperty()
   createdAt: Date;
 
   @ApiProperty()
   updatedAt: Date;
+}
+
+export class CourseTeacherListItemDto extends CourseListItemDto {
+  @ApiProperty({ enum: CourseStatus })
+  status: CourseStatus;
+
+  @ApiPropertyOptional()
+  archivedAt?: Date | null;
 }

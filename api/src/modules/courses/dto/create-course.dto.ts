@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CourseLevel, CourseStatus } from '@prisma/client';
+import { CourseLevel } from '@prisma/client';
 import { IsEnum, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreateCourseDto {
@@ -10,18 +10,12 @@ export class CreateCourseDto {
 
   @ApiProperty()
   @IsString()
-  @MaxLength(120)
-  slug: string;
+  @MaxLength(500)
+  shortDescription: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsString()
-  shortDescription?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  description?: string;
+  description: string;
 
   @ApiPropertyOptional({ enum: CourseLevel, default: CourseLevel.ALL })
   @IsOptional()
@@ -33,14 +27,23 @@ export class CreateCourseDto {
   @IsString()
   language?: string;
 
-  @ApiPropertyOptional({ default: 0 })
-  @IsOptional()
+  @ApiProperty({ default: 0 })
   @IsNumber()
   @Min(0)
-  price?: number;
+  price: number;
 
-  @ApiPropertyOptional({ enum: CourseStatus, default: CourseStatus.DRAFT })
+  @ApiProperty({ default: 0 })
+  @IsNumber()
+  @Min(0)
+  estimatedDuration: number;
+
+  @ApiPropertyOptional({ default: 'basic html, css, javascript' })
   @IsOptional()
-  @IsEnum(CourseStatus)
-  status?: CourseStatus;
+  @IsString()
+  requirements?: string;
+
+  @ApiPropertyOptional({ default: 'learn how to build a website' })
+  @IsOptional()
+  @IsString()
+  learningOutcomes?: string;
 }

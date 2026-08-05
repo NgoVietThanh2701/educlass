@@ -18,6 +18,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RoleUser } from '@prisma/client';
 import { UPLOAD_ALLOWED_MIME_TYPES, UPLOAD_MAX_FILE_SIZE } from '@common/constants/upload.constant';
+import { ApiFileUploadBody } from '@common/swagger/file-upload.swagger';
 import { AppException } from '@common/exceptions/app.exception';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { LessonAttachmentResponseDto } from './dto/lesson-attachment-response.dto';
@@ -38,7 +39,7 @@ export class LessonsController {
   @Post()
   @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Created lesson successfully')
-  @ApiOperation({ summary: 'Create lesson under a section' })
+  @ApiOperation({ summary: 'Create lesson under a section (Only Teacher)' })
   @ApiResponse({ status: 201, description: 'Lesson created successfully', type: LessonResponseDto })
   create(
     @Param('courseId') courseId: string,
@@ -52,7 +53,7 @@ export class LessonsController {
   @Get()
   @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Retrieved lessons successfully')
-  @ApiOperation({ summary: 'Get all lessons in a section' })
+  @ApiOperation({ summary: 'Get all lessons in a section (Only Teacher)' })
   @ApiResponse({ status: 200, type: LessonResponseDto, isArray: true })
   findAll(
     @Param('courseId') courseId: string,
@@ -62,23 +63,10 @@ export class LessonsController {
     return this.lessonsService.findAll(courseId, sectionId, teacherId);
   }
 
-  @Get('student')
-  @RolesUser(RoleUser.STUDENT)
-  @SuccessMessage('Retrieved lessons successfully')
-  @ApiOperation({ summary: 'Student: Get all lessons in a section for an enrolled course' })
-  @ApiResponse({ status: 200, type: LessonResponseDto, isArray: true })
-  findAllForStudent(
-    @Param('courseId') courseId: string,
-    @Param('sectionId') sectionId: string,
-    @CurrentUser('id') studentId: string,
-  ) {
-    return this.lessonsService.findAllForStudent(courseId, sectionId, studentId);
-  }
-
   @Get(':lessonId')
   @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Retrieved lesson successfully')
-  @ApiOperation({ summary: 'Get lesson detail' })
+  @ApiOperation({ summary: 'Get lesson detail  (Only Teacher)' })
   @ApiResponse({ status: 200, type: LessonResponseDto })
   findOne(
     @Param('courseId') courseId: string,
@@ -92,7 +80,7 @@ export class LessonsController {
   @Get('student/:lessonId')
   @RolesUser(RoleUser.STUDENT)
   @SuccessMessage('Retrieved lesson successfully')
-  @ApiOperation({ summary: 'Student: Get lesson detail for an enrolled course' })
+  @ApiOperation({ summary: 'Student: Get lesson detail for an enrolled course (Only Student)' })
   @ApiResponse({ status: 200, type: LessonResponseDto })
   findOneForStudent(
     @Param('courseId') courseId: string,
@@ -106,7 +94,7 @@ export class LessonsController {
   @Patch(':lessonId')
   @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Updated lesson successfully')
-  @ApiOperation({ summary: 'Update lesson' })
+  @ApiOperation({ summary: 'Update lesson  (Only Teacher)' })
   @ApiResponse({ status: 200, type: LessonResponseDto })
   update(
     @Param('courseId') courseId: string,
@@ -121,7 +109,7 @@ export class LessonsController {
   @Post(':lessonId/content')
   @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Updated lesson content successfully')
-  @ApiOperation({ summary: 'Upsert lesson content' })
+  @ApiOperation({ summary: 'Upsert lesson content  (Only Teacher)' })
   @ApiResponse({ status: 200, description: 'Lesson content updated successfully' })
   upsertContent(
     @Param('courseId') courseId: string,
@@ -135,8 +123,9 @@ export class LessonsController {
 
   @Post(':lessonId/attachments')
   @RolesUser(RoleUser.TEACHER)
-  @ApiOperation({ summary: 'Upload a lesson attachment file' })
+  @ApiOperation({ summary: 'Upload a lesson attachment file (Only Teacher)' })
   @ApiConsumes('multipart/form-data')
+  @ApiFileUploadBody()
   @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: UPLOAD_MAX_FILE_SIZE },
@@ -167,7 +156,7 @@ export class LessonsController {
   @Get(':lessonId/progress')
   @RolesUser(RoleUser.STUDENT)
   @SuccessMessage('Retrieved lesson progress successfully')
-  @ApiOperation({ summary: 'Get the current student lesson progress' })
+  @ApiOperation({ summary: 'Get the current student lesson progress (Only Student)' })
   @ApiResponse({ status: 200, type: LessonProgressResponseDto })
   getProgress(
     @Param('courseId') courseId: string,
@@ -181,7 +170,7 @@ export class LessonsController {
   @Patch(':lessonId/progress')
   @RolesUser(RoleUser.STUDENT)
   @SuccessMessage('Updated lesson progress successfully')
-  @ApiOperation({ summary: 'Save or update lesson progress for the current student' })
+  @ApiOperation({ summary: 'Save or update lesson progress for the current student (Only Student)' })
   @ApiResponse({ status: 200, type: LessonProgressResponseDto })
   upsertProgress(
     @Param('courseId') courseId: string,

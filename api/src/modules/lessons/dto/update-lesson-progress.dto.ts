@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class UpdateLessonProgressDto {
   @ApiPropertyOptional({ default: false })
@@ -12,14 +12,4 @@ export class UpdateLessonProgressDto {
   @IsNumber()
   @Min(0)
   lastPosition?: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  lessonId?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  userId?: string;
 }

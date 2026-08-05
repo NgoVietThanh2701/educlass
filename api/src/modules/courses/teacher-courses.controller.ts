@@ -16,26 +16,30 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RoleUser } from '@prisma/client';
 import { UPLOAD_IMAGE_MIME_TYPES, UPLOAD_MAX_FILE_SIZE } from '@common/constants/upload.constant';
 import { CreateCourseDto } from './dto/create-course.dto';
+import { CreateCourseSwaggerBody } from './dto/create-course-swagger.body';
 import { CourseResponseDto } from './dto/course-response.dto';
-import { UpdateCourseDto } from './dto/update-course.dto';
+import { UpdateCourseDto, ChangeCourseStatusDto } from './dto/update-course.dto';
+import { CourseTeacherListItemDto } from './dto/course-list-item.dto';
+import { CourseTeacherDetailDto } from './dto/course-teacher-detail.dto';
 import { CoursesService } from './courses.service';
 
-@ApiTags('Courses')
+@ApiTags('Teacher Courses')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesUserGuard)
 @RolesUser(RoleUser.TEACHER)
-@Controller('courses')
-export class CoursesController {
+@Controller('teacher/courses')
+export class TeacherCoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
   @Post()
   @SuccessMessage('Created course successfully')
   @ApiOperation({ summary: 'Create a new course with optional thumbnail image' })
   @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: CreateCourseSwaggerBody })
   @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: UPLOAD_MAX_FILE_SIZE },
@@ -48,7 +52,7 @@ export class CoursesController {
       },
     }),
   )
-  @ApiResponse({ status: 201, description: 'Course created successfully', type: CourseResponseDto })
+  @ApiResponse({ status: 201, type: CourseResponseDto })
   create(
     @CurrentUser('id') teacherId: string,
     @UploadedFile() file: Express.Multer.File,
@@ -62,44 +66,36 @@ export class CoursesController {
   }
 
   @Get()
-  @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Retrieved courses successfully')
-  @ApiOperation({ summary: 'Get all courses of current teacher' })
-  @ApiResponse({ status: 200, type: CourseResponseDto, isArray: true })
-  findAllByTeacher(@CurrentUser('id') teacherId: string): Promise<CourseResponseDto[]> {
+  @ApiOperation({ summary: 'Get all courses created by the current teacher' })
+  @ApiResponse({ status: 200, type: CourseTeacherListItemDto, isArray: true })
+  findAllByTeacher(@CurrentUser('id') teacherId: string) {
     return this.coursesService.findAllByTeacher(teacherId);
   }
 
-  @Get('student')
-  @RolesUser(RoleUser.STUDENT)
-  @SuccessMessage('Retrieved enrolled courses successfully')
-  @ApiOperation({ summary: 'Get all courses enrolled by the current student' })
-  @ApiResponse({ status: 200, type: CourseResponseDto, isArray: true })
-  findAllByStudent(@CurrentUser('id') studentId: string): Promise<CourseResponseDto[]> {
-    return this.coursesService.findAllByStudent(studentId);
-  }
-
   @Get(':courseId')
-  @RolesUser(RoleUser.TEACHER)
-  @SuccessMessage('Retrieved course successfully')
-  @ApiOperation({ summary: 'Get course detail' })
-  @ApiResponse({ status: 200, type: CourseResponseDto })
-  findOne(@Param('courseId') courseId: string, @CurrentUser('id') teacherId: string) {
-    return this.coursesService.findOne(courseId, teacherId);
+  @SuccessMessage('Retrieved course detail successfully')
+  @ApiOperation({summary: `Get course detail with sections, lessons, and assessments for editing`})
+  @ApiResponse({ status: 200, type: CourseTeacherDetailDto })
+  findTeacherDetail(@Param('courseId') courseId: string, @CurrentUser('id') teacherId: string) {
+    return this.coursesService.findTeacherDetail(courseId, teacherId);
   }
 
-  @Get('student/:courseId')
-  @RolesUser(RoleUser.STUDENT)
-  @SuccessMessage('Retrieved course successfully')
-  @ApiOperation({ summary: 'Student: Get course detail for an enrolled course' })
+  @Patch(':courseId/status')
+  @SuccessMessage('Updated course status successfully')
+  @ApiOperation({ summary: 'Change course status' })
   @ApiResponse({ status: 200, type: CourseResponseDto })
-  findOneForStudent(@Param('courseId') courseId: string, @CurrentUser('id') studentId: string) {
-    return this.coursesService.findOneForStudent(courseId, studentId);
+  changeStatus(
+    @Param('courseId') courseId: string,
+    @CurrentUser('id') teacherId: string,
+    @Body() dto: ChangeCourseStatusDto,
+  ) {
+    return this.coursesService.changeStatus(courseId, teacherId, dto.status);
   }
 
   @Patch(':courseId')
   @SuccessMessage('Updated course successfully')
-  @ApiOperation({ summary: 'Update course' })
+  @ApiOperation({ summary: 'Update course metadata' })
   @ApiResponse({ status: 200, type: CourseResponseDto })
   update(
     @Param('courseId') courseId: string,

@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiFileUploadBody } from '@common/swagger/file-upload.swagger';
 import { MessageService } from '../services/message.service';
 import { AttachmentService } from '@common/services/attachment.service';
 import { SendMessageDto } from '../dto/send-message.dto';
@@ -63,6 +64,7 @@ export class MessageController {
   @Post('upload')
   @ApiOperation({ summary: 'Upload a file attachment' })
   @ApiConsumes('multipart/form-data')
+  @ApiFileUploadBody()
   @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: UPLOAD_MAX_FILE_SIZE },

@@ -36,7 +36,6 @@ export class SectionsController {
   }
 
   @Get()
-  @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Retrieved sections successfully')
   @ApiOperation({ summary: 'Get all sections of a course' })
   @ApiResponse({ status: 200, type: SectionResponseDto, isArray: true })
@@ -44,17 +43,7 @@ export class SectionsController {
     return this.sectionsService.findAll(courseId, teacherId);
   }
 
-  @Get('student')
-  @RolesUser(RoleUser.STUDENT)
-  @SuccessMessage('Retrieved sections successfully')
-  @ApiOperation({ summary: 'Student: Get all sections of an enrolled course' })
-  @ApiResponse({ status: 200, type: SectionResponseDto, isArray: true })
-  findAllForStudent(@Param('courseId') courseId: string, @CurrentUser('id') studentId: string) {
-    return this.sectionsService.findAllForStudent(courseId, studentId);
-  }
-
   @Get(':sectionId')
-  @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Retrieved section successfully')
   @ApiOperation({ summary: 'Get section detail' })
   @ApiResponse({ status: 200, type: SectionResponseDto })
@@ -66,21 +55,7 @@ export class SectionsController {
     return this.sectionsService.findOne(courseId, sectionId, teacherId);
   }
 
-  @Get('student/:sectionId')
-  @RolesUser(RoleUser.STUDENT)
-  @SuccessMessage('Retrieved section successfully')
-  @ApiOperation({ summary: 'Student: Get section detail for an enrolled course' })
-  @ApiResponse({ status: 200, type: SectionResponseDto })
-  findOneForStudent(
-    @Param('courseId') courseId: string,
-    @Param('sectionId') sectionId: string,
-    @CurrentUser('id') studentId: string,
-  ) {
-    return this.sectionsService.findOneForStudent(courseId, sectionId, studentId);
-  }
-
   @Patch(':sectionId')
-  @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Updated section successfully')
   @ApiOperation({ summary: 'Update section' })
   @ApiResponse({ status: 200, type: SectionResponseDto })

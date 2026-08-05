@@ -1,7 +1,8 @@
 import { AppException } from '@common/exceptions/app.exception';
 import { Injectable } from '@nestjs/common';
-import { EnrollmentStatus } from '@prisma/client';
+import { CourseStatus, EnrollmentStatus } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
+import { buildCourseProgressPayload } from '@common/utils/course-progress.util';
 import { enrollmentSelect, toEnrollmentResponse } from './enrollment.mapper';
 
 @Injectable()
@@ -11,10 +12,13 @@ export class EnrollmentsService {
   async enroll(courseId: string, studentId: string) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
-      select: { id: true, teacherId: true },
+      select: { id: true, teacherId: true, status: true },
     });
 
     if (!course) throw AppException.notFound('Course not found');
+    if (course.status !== CourseStatus.PUBLISHED) {
+      throw AppException.badRequest('Course is not open for enrollment');
+    }
 
     const student = await this.prisma.user.findUnique({
       where: { id: studentId },
@@ -70,16 +74,12 @@ export class EnrollmentsService {
       },
     });
 
-    const percent = totalLessons === 0 ? 0 : Math.round((completedLessons / totalLessons) * 100);
-
-    return {
+    return buildCourseProgressPayload({
       courseId,
       studentId,
       totalLessons,
       completedLessons,
-      percent,
-      completed: percent >= 100,
-    };
+    });
   }
 
   async getMyCourseProgress(studentId: string) {

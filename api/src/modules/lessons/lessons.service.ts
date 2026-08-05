@@ -1,4 +1,11 @@
 import { AppException } from '@common/exceptions/app.exception';
+import { PrismaErrorCode } from '@common/constants/prisma-error.constant';
+import { CourseAccessService } from '@common/services/course-access.service';
+import {
+  buildLessonUnlockContext,
+  isLessonUnlocked,
+  LessonUnlockInput,
+} from '@common/utils/lesson-unlock.util';
 import { AttachmentService } from '@common/services/attachment.service';
 import { Injectable } from '@nestjs/common';
 import { LessonType, LessonUnlockRule } from '@prisma/client';
@@ -19,10 +26,11 @@ export class LessonsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly attachmentService: AttachmentService,
+    private readonly courseAccess: CourseAccessService,
   ) {}
 
   async create(courseId: string, sectionId: string, teacherId: string, dto: CreateLessonDto) {
-    await this.ensureTeacherOwnsCourse(courseId, teacherId);
+    await this.courseAccess.ensureTeacherOwnsCourse(courseId, teacherId);
     await this.ensureSectionBelongsToCourse(courseId, sectionId);
 
     const lastLesson = await this.prisma.lesson.findFirst({
@@ -31,25 +39,32 @@ export class LessonsService {
       select: { order: true },
     });
 
-    const lesson = await this.prisma.lesson.create({
-      data: {
-        sectionId,
-        title: dto.title,
-        description: dto.description,
-        type: dto.type ?? LessonType.TEXT,
-        order: dto.order ?? (lastLesson?.order ?? 0) + 1,
-        durationSeconds: dto.durationSeconds,
-        isPreview: dto.isPreview ?? false,
-        unlockRule: dto.unlockRule ?? LessonUnlockRule.FREE,
-      },
-      select: lessonSelect,
-    });
+    const order = dto.order ?? (lastLesson?.order ?? 0) + 1;
+    await this.ensureOrderAvailable(sectionId, order);
 
-    return toLessonResponse(lesson);
+    try {
+      const lesson = await this.prisma.lesson.create({
+        data: {
+          sectionId,
+          title: dto.title,
+          description: dto.description,
+          type: dto.type ?? LessonType.TEXT,
+          order,
+          durationSeconds: dto.durationSeconds,
+          isPreview: dto.isPreview ?? false,
+          unlockRule: dto.unlockRule ?? LessonUnlockRule.FREE,
+        },
+        select: lessonSelect,
+      });
+
+      return toLessonResponse(lesson);
+    } catch (error) {
+      this.handleOrderConflict(error, order);
+    }
   }
 
   async findAll(courseId: string, sectionId: string, teacherId: string) {
-    await this.ensureTeacherOwnsCourse(courseId, teacherId);
+    await this.courseAccess.ensureTeacherOwnsCourse(courseId, teacherId);
     await this.ensureSectionBelongsToCourse(courseId, sectionId);
 
     const lessons = await this.prisma.lesson.findMany({
@@ -61,21 +76,8 @@ export class LessonsService {
     return lessons.map(toLessonResponse);
   }
 
-  async findAllForStudent(courseId: string, sectionId: string, studentId: string) {
-    await this.ensureStudentEnrolledInCourse(courseId, studentId);
-    await this.ensureSectionBelongsToCourse(courseId, sectionId);
-
-    const lessons = await this.prisma.lesson.findMany({
-      where: { sectionId },
-      orderBy: { order: 'asc' },
-      select: lessonSelect,
-    });
-
-    return lessons.map((lesson) => toLessonResponse(lesson));
-  }
-
   async findOne(courseId: string, sectionId: string, lessonId: string, teacherId: string) {
-    await this.ensureTeacherOwnsCourse(courseId, teacherId);
+    await this.courseAccess.ensureTeacherOwnsCourse(courseId, teacherId);
     await this.ensureSectionBelongsToCourse(courseId, sectionId);
 
     const lesson = await this.prisma.lesson.findUnique({
@@ -97,7 +99,7 @@ export class LessonsService {
     lessonId: string,
     studentId: string,
   ) {
-    await this.ensureStudentEnrolledInCourse(courseId, studentId);
+    await this.courseAccess.ensureStudentEnrolled(courseId, studentId);
     await this.ensureSectionBelongsToCourse(courseId, sectionId);
     await this.ensureLessonBelongsToSection(sectionId, lessonId);
     await this.ensureLessonUnlocked(courseId, sectionId, lessonId, studentId);
@@ -118,7 +120,7 @@ export class LessonsService {
     teacherId: string,
     dto: UpdateLessonDto,
   ) {
-    await this.ensureTeacherOwnsCourse(courseId, teacherId);
+    await this.courseAccess.ensureTeacherOwnsCourse(courseId, teacherId);
     await this.ensureSectionBelongsToCourse(courseId, sectionId);
 
     const lesson = await this.prisma.lesson.findUnique({
@@ -131,13 +133,25 @@ export class LessonsService {
       throw AppException.badRequest('Lesson does not belong to this section');
     }
 
-    const updated = await this.prisma.lesson.update({
-      where: { id: lessonId },
-      data: dto,
-      select: lessonSelect,
-    });
+    if (dto.order !== undefined) {
+      await this.ensureOrderAvailable(sectionId, dto.order, lessonId);
+    }
 
-    return toLessonResponse(updated);
+    try {
+      const updated = await this.prisma.lesson.update({
+        where: { id: lessonId },
+        data: dto,
+        select: lessonSelect,
+      });
+
+      return toLessonResponse(updated);
+    } catch (error) {
+      if (dto.order !== undefined) {
+        this.handleOrderConflict(error, dto.order);
+      }
+
+      throw error;
+    }
   }
 
   async upsertContent(
@@ -147,11 +161,11 @@ export class LessonsService {
     teacherId: string,
     dto: LessonContentDto,
   ) {
-    await this.ensureTeacherOwnsCourse(courseId, teacherId);
+    await this.courseAccess.ensureTeacherOwnsCourse(courseId, teacherId);
     await this.ensureSectionBelongsToCourse(courseId, sectionId);
     await this.ensureLessonBelongsToSection(sectionId, lessonId);
 
-    const content = await this.prisma.lessonContent.upsert({
+    return this.prisma.lessonContent.upsert({
       where: { lessonId },
       create: {
         lessonId,
@@ -165,8 +179,6 @@ export class LessonsService {
         textContent: dto.textContent,
       },
     });
-
-    return content;
   }
 
   async uploadAttachment(
@@ -176,7 +188,7 @@ export class LessonsService {
     teacherId: string,
     file: Express.Multer.File,
   ) {
-    await this.ensureTeacherOwnsCourse(courseId, teacherId);
+    await this.courseAccess.ensureTeacherOwnsCourse(courseId, teacherId);
     await this.ensureSectionBelongsToCourse(courseId, sectionId);
     await this.ensureLessonBelongsToSection(sectionId, lessonId);
 
@@ -198,7 +210,7 @@ export class LessonsService {
   }
 
   async getProgress(courseId: string, sectionId: string, lessonId: string, studentId: string) {
-    await this.ensureStudentEnrolledInCourse(courseId, studentId);
+    await this.courseAccess.ensureStudentEnrolled(courseId, studentId);
     await this.ensureSectionBelongsToCourse(courseId, sectionId);
     await this.ensureLessonBelongsToSection(sectionId, lessonId);
 
@@ -227,7 +239,7 @@ export class LessonsService {
     studentId: string,
     dto: UpdateLessonProgressDto,
   ) {
-    await this.ensureStudentEnrolledInCourse(courseId, studentId);
+    await this.courseAccess.ensureStudentEnrolled(courseId, studentId);
     await this.ensureSectionBelongsToCourse(courseId, sectionId);
     await this.ensureLessonBelongsToSection(sectionId, lessonId);
     await this.ensureLessonUnlocked(courseId, sectionId, lessonId, studentId);
@@ -240,7 +252,7 @@ export class LessonsService {
     const completed = dto.completed ?? existing?.completed ?? false;
     const lastPosition = dto.lastPosition ?? existing?.lastPosition ?? 0;
 
-    const progress = await this.prisma.lessonProgress.upsert({
+    return this.prisma.lessonProgress.upsert({
       where: { userId_lessonId: { userId: studentId, lessonId } },
       create: {
         userId: studentId,
@@ -255,18 +267,29 @@ export class LessonsService {
         completedAt: completed ? (existing?.completedAt ?? new Date()) : null,
       },
     });
-
-    return progress;
   }
 
-  private async ensureTeacherOwnsCourse(courseId: string, teacherId: string) {
-    const course = await this.prisma.course.findUnique({
-      where: { id: courseId },
-      select: { id: true, teacherId: true },
+  private async ensureOrderAvailable(sectionId: string, order: number, excludeLessonId?: string) {
+    const existing = await this.prisma.lesson.findFirst({
+      where: {
+        sectionId,
+        order,
+        ...(excludeLessonId ? { id: { not: excludeLessonId } } : {}),
+      },
+      select: { id: true },
     });
 
-    if (!course) throw AppException.notFound('Course not found');
-    if (course.teacherId !== teacherId) throw AppException.forbidden('Not authorized');
+    if (existing) {
+      throw AppException.conflict(`Lesson order ${order} is already used in this section`);
+    }
+  }
+
+  private handleOrderConflict(error: unknown, order: number): never {
+    if ((error as { code?: string }).code === PrismaErrorCode.UNIQUE_CONSTRAINT_VIOLATION) {
+      throw AppException.conflict(`Lesson order ${order} is already used in this section`);
+    }
+
+    throw error;
   }
 
   private async ensureSectionBelongsToCourse(courseId: string, sectionId: string) {
@@ -293,96 +316,92 @@ export class LessonsService {
     }
   }
 
-  private async ensureStudentEnrolledInCourse(courseId: string, studentId: string) {
-    const enrollment = await this.prisma.enrollment.findUnique({
-      where: { courseId_studentId: { courseId, studentId } },
-      select: { courseId: true, studentId: true },
-    });
-
-    if (!enrollment) throw AppException.forbidden('Student is not enrolled in this course');
-  }
-
   private async ensureLessonUnlocked(
     courseId: string,
     sectionId: string,
     lessonId: string,
     studentId: string,
   ) {
-    const lesson = await this.prisma.lesson.findUnique({
-      where: { id: lessonId },
+    const sections = await this.prisma.section.findMany({
+      where: { courseId },
+      orderBy: { order: 'asc' },
       select: {
         id: true,
-        sectionId: true,
         order: true,
-        unlockRule: true,
-        section: {
-          select: {
-            courseId: true,
-            order: true,
-          },
+        lessons: {
+          orderBy: { order: 'asc' },
+          select: { id: true, sectionId: true, order: true, unlockRule: true },
+        },
+        assessments: {
+          select: { id: true },
         },
       },
     });
 
-    if (!lesson) throw AppException.notFound('Lesson not found');
-    if (lesson.sectionId !== sectionId) {
+    const targetLesson = sections
+      .flatMap((section) => section.lessons)
+      .find((lesson) => lesson.id === lessonId);
+
+    if (!targetLesson) throw AppException.notFound('Lesson not found');
+    if (targetLesson.sectionId !== sectionId) {
       throw AppException.badRequest('Lesson does not belong to this section');
     }
 
-    if (lesson.unlockRule === LessonUnlockRule.FREE) {
-      return;
-    }
+    const targetSection = sections.find((section) => section.id === sectionId);
+    if (!targetSection) throw AppException.notFound('Section not found');
 
-    let previousLessonCompleted = true;
+    const unlockLessons: LessonUnlockInput[] = sections.flatMap((section) =>
+      section.lessons.map((lesson) => ({
+        id: lesson.id,
+        sectionId: section.id,
+        order: lesson.order,
+        unlockRule: lesson.unlockRule,
+        sectionOrder: section.order,
+      })),
+    );
 
-    if (lesson.unlockRule === LessonUnlockRule.PREVIOUS_LESSON) {
-      const previousLesson = await this.prisma.lesson.findFirst({
+    const assessmentsForUnlock = sections.flatMap((section) =>
+      section.assessments.map((assessment) => ({
+        id: assessment.id,
+        sectionOrder: section.order,
+      })),
+    );
+
+    const [completedProgress, passedAttempts] = await Promise.all([
+      this.prisma.lessonProgress.findMany({
         where: {
-          sectionId,
-          order: lesson.order - 1,
+          userId: studentId,
+          completed: true,
+          lesson: { section: { courseId } },
         },
-        select: { id: true },
-      });
-
-      if (previousLesson) {
-        const progress = await this.prisma.lessonProgress.findUnique({
-          where: { userId_lessonId: { userId: studentId, lessonId: previousLesson.id } },
-          select: { completed: true },
-        });
-        previousLessonCompleted = progress?.completed ?? false;
-      }
-    }
-
-    if (lesson.unlockRule === LessonUnlockRule.PREVIOUS_ASSESSMENT) {
-      const previousAssessment = await this.prisma.assessment.findFirst({
+        select: { lessonId: true },
+      }),
+      this.prisma.assessmentAttempt.findMany({
         where: {
-          section: {
-            courseId: lesson.section.courseId,
-            order: {
-              lt: lesson.section.order,
-            },
-          },
+          studentId,
+          passed: true,
+          assessment: { section: { courseId } },
         },
-        orderBy: [{ section: { order: 'desc' } }, { order: 'desc' }],
-        select: { id: true },
-      });
+        select: { assessmentId: true },
+      }),
+    ]);
 
-      if (previousAssessment) {
-        const attempt = await this.prisma.assessmentAttempt.findFirst({
-          where: {
-            assessmentId: previousAssessment.id,
-            studentId,
-            passed: true,
-          },
-          orderBy: { startedAt: 'desc' },
-          select: { id: true },
-        });
+    const unlockContext = buildLessonUnlockContext(
+      unlockLessons,
+      new Set(completedProgress.map((row) => row.lessonId)),
+      new Set(passedAttempts.map((row) => row.assessmentId)),
+      assessmentsForUnlock,
+    );
 
-        previousLessonCompleted = !!attempt;
-      }
-    }
+    const unlockInput: LessonUnlockInput = {
+      id: targetLesson.id,
+      sectionId: targetSection.id,
+      order: targetLesson.order,
+      unlockRule: targetLesson.unlockRule,
+      sectionOrder: targetSection.order,
+    };
 
-    if (!previousLessonCompleted) {
+    if (!isLessonUnlocked(unlockInput, unlockContext)) {
       throw AppException.forbidden('This lesson is locked until the prerequisite is completed');
     }
   }
