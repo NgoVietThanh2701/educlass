@@ -1,4 +1,4 @@
-import { GitBranch, Globe2, Mail, MessageCircle, Send } from "lucide-react";
+import { GitBranch, Globe2, MessageCircle, Send } from "lucide-react";
 
 export interface FooterLink {
   label: string;

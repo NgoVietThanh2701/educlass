@@ -8,6 +8,7 @@ import Logo from "@/components/shared/Logo";
 import { publicNavItems } from "@/constants/navigation";
 import { collapseMotion, fadeSlideMotion } from "@/lib/motion";
 import { Menu, X } from "lucide-react";
+import { ROUTES } from "@/constants/routes";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -34,13 +35,13 @@ export default function Header() {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
-              href="/auth/login"
+              href={ROUTES.LOGIN}
               className="hidden text-sm text-foreground/90 hover:text-primary sm:inline-flex"
             >
               Đăng nhập
             </Link>
             <Link
-              href="/auth/register"
+              href={ROUTES.REGISTER}
               className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white transition hover:opacity-95"
             >
               Đăng ký
