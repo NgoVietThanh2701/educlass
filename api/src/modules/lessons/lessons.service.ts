@@ -8,7 +8,7 @@ import {
 } from '@common/utils/lesson-unlock.util';
 import { AttachmentService } from '@common/services/attachment.service';
 import { Injectable } from '@nestjs/common';
-import { LessonType, LessonUnlockRule } from '@prisma/client';
+import { AssessmentStatus, LessonType, LessonUnlockRule } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { LessonContentDto } from './dto/lesson-content.dto';
@@ -100,6 +100,7 @@ export class LessonsService {
     studentId: string,
   ) {
     await this.courseAccess.ensureStudentEnrolled(courseId, studentId);
+    await this.courseAccess.ensurePublishedCourse(courseId);
     await this.ensureSectionBelongsToCourse(courseId, sectionId);
     await this.ensureLessonBelongsToSection(sectionId, lessonId);
     await this.ensureLessonUnlocked(courseId, sectionId, lessonId, studentId);
@@ -211,6 +212,7 @@ export class LessonsService {
 
   async getProgress(courseId: string, sectionId: string, lessonId: string, studentId: string) {
     await this.courseAccess.ensureStudentEnrolled(courseId, studentId);
+    await this.courseAccess.ensurePublishedCourse(courseId);
     await this.ensureSectionBelongsToCourse(courseId, sectionId);
     await this.ensureLessonBelongsToSection(sectionId, lessonId);
 
@@ -240,6 +242,7 @@ export class LessonsService {
     dto: UpdateLessonProgressDto,
   ) {
     await this.courseAccess.ensureStudentEnrolled(courseId, studentId);
+    await this.courseAccess.ensurePublishedCourse(courseId);
     await this.ensureSectionBelongsToCourse(courseId, sectionId);
     await this.ensureLessonBelongsToSection(sectionId, lessonId);
     await this.ensureLessonUnlocked(courseId, sectionId, lessonId, studentId);
@@ -333,6 +336,7 @@ export class LessonsService {
           select: { id: true, sectionId: true, order: true, unlockRule: true },
         },
         assessments: {
+          where: { status: AssessmentStatus.PUBLISHED },
           select: { id: true },
         },
       },

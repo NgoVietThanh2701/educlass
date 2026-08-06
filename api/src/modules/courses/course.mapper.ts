@@ -4,10 +4,7 @@ import {
   assessmentPublicOutlineSelect,
   toAssessmentPublicOutline,
 } from '@modules/assessments/mapper/assessment.mapper';
-import {
-  lessonPublicOutlineSelect,
-  toLessonPublicOutline,
-} from '@modules/lessons/lesson.mapper';
+import { lessonPublicOutlineSelect, toLessonPublicOutline } from '@modules/lessons/lesson.mapper';
 import { sectionOutlineSelect, toSectionOutline } from '@modules/sections/section.mapper';
 import { CourseListItemDto, CourseTeacherListItemDto } from './dto/course-list-item.dto';
 import { CoursePublicDetailDto } from './dto/course-public-detail.dto';

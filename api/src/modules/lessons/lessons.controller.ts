@@ -170,7 +170,9 @@ export class LessonsController {
   @Patch(':lessonId/progress')
   @RolesUser(RoleUser.STUDENT)
   @SuccessMessage('Updated lesson progress successfully')
-  @ApiOperation({ summary: 'Save or update lesson progress for the current student (Only Student)' })
+  @ApiOperation({
+    summary: 'Save or update lesson progress for the current student (Only Student)',
+  })
   @ApiResponse({ status: 200, type: LessonProgressResponseDto })
   upsertProgress(
     @Param('courseId') courseId: string,

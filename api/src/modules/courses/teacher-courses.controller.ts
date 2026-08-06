@@ -16,7 +16,14 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { RoleUser } from '@prisma/client';
 import { UPLOAD_IMAGE_MIME_TYPES, UPLOAD_MAX_FILE_SIZE } from '@common/constants/upload.constant';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -75,7 +82,9 @@ export class TeacherCoursesController {
 
   @Get(':courseId')
   @SuccessMessage('Retrieved course detail successfully')
-  @ApiOperation({summary: `Get course detail with sections, lessons, and assessments for editing`})
+  @ApiOperation({
+    summary: `Get course detail with sections, lessons, and assessments for editing`,
+  })
   @ApiResponse({ status: 200, type: CourseTeacherDetailDto })
   findTeacherDetail(@Param('courseId') courseId: string, @CurrentUser('id') teacherId: string) {
     return this.coursesService.findTeacherDetail(courseId, teacherId);

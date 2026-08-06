@@ -21,12 +21,12 @@ import {
 import { sectionSelect, toSectionResponse } from '@modules/sections/section.mapper';
 import { AttachmentService } from '@common/services/attachment.service';
 import { Injectable } from '@nestjs/common';
-import { CourseStatus } from '@prisma/client';
+import { AssessmentStatus, CourseStatus } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
 import { generateSlug } from '@common/utils/generate-code.util';
 import { PrismaErrorCode } from '@common/constants/prisma-error.constant';
 import { CreateCourseDto } from './dto/create-course.dto';
-import { UpdateCourseDto, ChangeCourseStatusDto } from './dto/update-course.dto';
+import { UpdateCourseDto } from './dto/update-course.dto';
 import {
   courseListSelect,
   coursePublicDetailSelect,
@@ -203,6 +203,7 @@ export class CoursesService {
               select: lessonListSelect,
             },
             assessments: {
+              where: { status: AssessmentStatus.PUBLISHED },
               orderBy: { order: 'asc' },
               select: assessmentTreeSelect,
             },
@@ -391,7 +392,9 @@ export class CoursesService {
       data: {
         status,
         publishedAt:
-          status === CourseStatus.PUBLISHED ? (course.publishedAt ?? new Date()) : course.publishedAt,
+          status === CourseStatus.PUBLISHED
+            ? (course.publishedAt ?? new Date())
+            : course.publishedAt,
         archivedAt: status === CourseStatus.ARCHIVED ? new Date() : null,
       },
       select: courseSelect,

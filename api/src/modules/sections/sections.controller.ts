@@ -11,7 +11,7 @@ import { SectionResponseDto } from './dto/section-response.dto';
 import { UpdateSectionDto } from './dto/update-section.dto';
 import { SectionsService } from './sections.service';
 
-@ApiTags('Sections')
+@ApiTags('Sections (Only Teacher)')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesUserGuard)
 @RolesUser(RoleUser.TEACHER)
