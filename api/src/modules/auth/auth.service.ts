@@ -7,7 +7,7 @@ import { UserNameUtil } from '@common/utils/username.util';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { RoleUser } from '@prisma/client';
-import { AuthResponseDto } from './dto/auth-response.dto';
+import { AuthDto } from './dto/auth-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { SALT_ROUNDS, SEQUENCE } from './auth.constants';
 import { OtpService } from '@modules/otp/otp.service';
@@ -71,7 +71,7 @@ export class AuthService {
   }
 
   // Refresh access token
-  async refreshTokens(userId: string): Promise<AuthResponseDto> {
+  async refreshTokens(userId: string): Promise<AuthDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: userSelect,
@@ -87,7 +87,7 @@ export class AuthService {
   }
 
   // Verify OTP for register
-  async verifyOtpRegister(otp: VerifyOtpDto): Promise<AuthResponseDto> {
+  async verifyOtpRegister(otp: VerifyOtpDto): Promise<AuthDto> {
     const { email, code } = otp;
 
     const user = await this.prisma.user.findUnique({
@@ -123,7 +123,7 @@ export class AuthService {
   }
 
   // Login for an existing teacher and student
-  async login(loginDto: LoginDto): Promise<AuthResponseDto> {
+  async login(loginDto: LoginDto): Promise<AuthDto> {
     const { identifier, password } = loginDto;
 
     const user = await this.prisma.user.findFirst({

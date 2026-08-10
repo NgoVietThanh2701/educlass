@@ -25,12 +25,9 @@ export function FormField({
         className="mb-2 inline-block text-sm font-medium text-slate-900 dark:text-slate-50"
       >
         {label}
-
         {required && <span className="ml-1 text-red-500">*</span>}
       </label>
-
       {children}
-
       {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
     </div>
   );

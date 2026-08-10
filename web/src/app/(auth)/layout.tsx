@@ -1,3 +1,4 @@
+import Logo from "@/components/shared/Logo";
 import Image from "next/image";
 import { ReactNode } from "react";
 
@@ -33,6 +34,11 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
           {/* Right */}
           <div className="order-first px-6 py-6 lg:px-8 md:order-last">
+            {/* Logo chỉ hiển thị trên mobile (khi Left Content bị ẩn text) */}
+            <div className="mb-6 flex justify-center md:hidden">
+              <Logo />
+            </div>
+
             <div className="mx-auto w-full max-w-md">{children}</div>
           </div>
         </div>

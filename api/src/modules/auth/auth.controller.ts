@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { AuthService } from './auth.service';
@@ -11,6 +11,8 @@ import { UserResponseDto } from '@modules/users/dto/user-response.dto';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import type { Response } from 'express';
+import { REFRESH_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE_OPTIONS } from './auth.constants';
 
 @Controller('auth')
 export class AuthController {
@@ -67,8 +69,18 @@ export class AuthController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid or expired OTP.',
   })
-  verifyOtpRegister(@Body() verifyDto: VerifyOtpDto): Promise<AuthResponseDto> {
-    return this.authService.verifyOtpRegister(verifyDto);
+  async verifyOtpRegister(
+    @Body() verifyDto: VerifyOtpDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<AuthResponseDto> {
+    const result = await this.authService.verifyOtpRegister(verifyDto);
+
+    response.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+
+    return {
+      accessToken: result.accessToken,
+      user: result.user,
+    };
   }
 
   // Resend verify OTP
@@ -114,8 +126,18 @@ export class AuthController {
     status: HttpStatus.TOO_MANY_REQUESTS,
     description: 'Too many requests. Rate limit exceeded',
   })
-  login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
-    return this.authService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<AuthResponseDto> {
+    const result = await this.authService.login(loginDto);
+
+    response.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+
+    return {
+      accessToken: result.accessToken,
+      user: result.user,
+    };
   }
 
   // Refresh access token
@@ -141,8 +163,18 @@ export class AuthController {
     status: HttpStatus.TOO_MANY_REQUESTS,
     description: 'Too many requests. Rate limit exceeded',
   })
-  refresh(@CurrentUser('id') userId: string): Promise<AuthResponseDto> {
-    return this.authService.refreshTokens(userId);
+  async refresh(
+    @CurrentUser('id') userId: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<AuthResponseDto> {
+    const result = await this.authService.refreshTokens(userId);
+
+    response.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+
+    return {
+      accessToken: result.accessToken,
+      user: result.user,
+    };
   }
 
   @Post('change-password')

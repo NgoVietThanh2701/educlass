@@ -3,12 +3,16 @@ import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppConfig } from '@common/constants/app-config.constant';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Set global prefix for all routes
   app.setGlobalPrefix('api/v1');
+
+  // Use cookie parser middleware
+  app.use(cookieParser());
 
   // Set Global validation
   app.useGlobalPipes(

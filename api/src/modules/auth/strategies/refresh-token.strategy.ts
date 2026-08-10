@@ -1,22 +1,28 @@
 // Refresh Token Strategy
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, ExtractJwt } from 'passport-jwt';
+import { Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { Injectable, Logger } from '@nestjs/common';
 import * as bycrypt from 'bcrypt';
 import { PrismaService } from '@prisma/prisma.service';
 import { AppException } from '@common/exceptions/app.exception';
+import { REFRESH_TOKEN_COOKIE } from '../auth.constants';
+
+const refreshTokenExtractor = (request: Request): string | null => {
+  return request.cookies?.[REFRESH_TOKEN_COOKIE] ?? null;
+};
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
   private readonly logger = new Logger(RefreshTokenStrategy.name);
+
   constructor(
     configService: ConfigService,
     private readonly prisma: PrismaService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: refreshTokenExtractor,
       ignoreExpiration: false,
       secretOrKey: configService.getOrThrow('JWT_REFRESH_SECRET'),
       passReqToCallback: true,
@@ -27,15 +33,10 @@ export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refres
   async validate(req: Request, payload: { sub: string }) {
     this.logger.log('RefreshTokenStrategy.validate called');
 
-    const authHeader = req.headers['authorization'];
-    if (!authHeader) {
-      console.error('No authorization header found');
-      throw AppException.unauthorized('Refresh token not provided');
-    }
+    const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE];
 
-    const refreshToken = authHeader.replace('Bearer', '').trim();
     if (!refreshToken) {
-      throw AppException.unauthorized('Refresh token is empty after extraction');
+      throw AppException.unauthorized('Refresh token not provided');
     }
 
     const user = await this.prisma.user.findUnique({
