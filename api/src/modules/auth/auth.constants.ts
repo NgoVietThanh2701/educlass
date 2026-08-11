@@ -13,5 +13,8 @@ export const REFRESH_TOKEN_COOKIE_OPTIONS = {
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'strict' as const,
   maxAge: 7 * 24 * 60 * 60 * 1000,
-  path: '/api/v1/auth/refresh-token',
+  // Scope to the auth namespace so the cookie is sent on both
+  // `/auth/refresh` and `/auth/logout` (guarded endpoints need it), while NOT
+  // exposing the refresh token on unrelated data endpoints (`/users/me`, ...).
+  path: '/api/v1/auth',
 };

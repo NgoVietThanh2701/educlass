@@ -202,4 +202,32 @@ export class AuthController {
   changePassword(@CurrentUser('id') userId: string, @Body() dto: ChangePasswordDto): Promise<void> {
     return this.authService.changePassword(userId, dto);
   }
+
+  // Logout user
+  @Post('logout')
+  @ModerateThrottle()
+  @HttpCode(HttpStatus.OK)
+  @SuccessMessage('Logged out successfully')
+  @UseGuards(RefreshTokenGuard)
+  @ApiBearerAuth('JWT-refresh')
+  @ApiOperation({
+    summary: 'Logout user',
+    description: 'Revoke the refresh token and clear the refresh cookie',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Logged out successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized - invalid or expired refresh token',
+  })
+  async logout(
+    @CurrentUser('id') userId: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<void> {
+    await this.authService.logout(userId);
+
+    response.clearCookie(REFRESH_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE_OPTIONS);
+  }
 }

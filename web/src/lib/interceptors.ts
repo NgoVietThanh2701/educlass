@@ -1,6 +1,7 @@
 import logout from "@/features/auth/api/logout";
 import { refreshAccessToken } from "@/features/auth/api/refresh";
 import { useAuthStore } from "@/features/auth/store/auth.store";
+import { hasSessionMarker, clearSessionMarker } from "@/lib/cookie";
 import type {
   AxiosError,
   AxiosInstance,
@@ -79,6 +80,13 @@ export function setupResponseInterceptor(api: AxiosInstance) {
         return Promise.reject(error);
       }
 
+      // No session marker (brand-new visitor): do NOT attempt refresh/logout.
+      // The 401 simply means "there is nothing to restore" -> reject directly.
+      if (!hasSessionMarker()) {
+        useAuthStore.getState().logout();
+        return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
 
       if (isRefreshing) {
@@ -109,13 +117,17 @@ export function setupResponseInterceptor(api: AxiosInstance) {
       } catch (refreshError) {
         processQueue(refreshError, null);
 
-        try {
-          await logout();
-        } catch {
-          // Ignore logout API error.
+        if (hasSessionMarker()) {
+          // A session existed but could not be restored -> revoke server-side.
+          try {
+            await logout();
+          } catch {
+            // Ignore logout API error (e.g. already expired).
+          }
         }
 
         useAuthStore.getState().logout();
+        clearSessionMarker();
 
         return Promise.reject(refreshError);
       } finally {

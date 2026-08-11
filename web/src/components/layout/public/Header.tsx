@@ -5,13 +5,17 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import Container from "@/components/layout/public/Container";
 import Logo from "@/components/shared/Logo";
+import UserMenu from "@/components/layout/public/UserMenu";
 import { publicNavItems } from "@/constants/navigation";
 import { collapseMotion, fadeSlideMotion } from "@/lib/motion";
 import { Menu, X } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const isInitializing = useAuthStore((state) => state.isInitializing);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   return (
     <header className="relative w-full border-b border-border bg-background/85 backdrop-blur">
@@ -34,18 +38,30 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href={ROUTES.LOGIN}
-              className="hidden text-sm text-foreground/90 hover:text-primary sm:inline-flex"
-            >
-              Đăng nhập
-            </Link>
-            <Link
-              href={ROUTES.REGISTER}
-              className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white transition hover:opacity-95"
-            >
-              Đăng ký
-            </Link>
+            {isInitializing ? (
+              // Neutral placeholder while the session is being restored (avoids flashing auth buttons)
+              <div
+                aria-hidden
+                className="hidden h-9 w-24 animate-pulse rounded-md bg-muted sm:block"
+              />
+            ) : isAuthenticated ? (
+              <UserMenu />
+            ) : (
+              <>
+                <Link
+                  href={ROUTES.LOGIN}
+                  className="hidden text-sm text-foreground/90 hover:text-primary sm:inline-flex"
+                >
+                  Đăng nhập
+                </Link>
+                <Link
+                  href={ROUTES.REGISTER}
+                  className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white transition hover:opacity-95"
+                >
+                  Đăng ký
+                </Link>
+              </>
+            )}
             <button
               type="button"
               className="inline-flex h-10 w-10 items-center justify-center text-foreground transition hover:border-primary hover:text-primary md:hidden"
@@ -82,13 +98,15 @@ export default function Header() {
                       {item.label}
                     </Link>
                   ))}
-                  <Link
-                    href="/auth/login"
-                    className="text-sm font-medium text-foreground/90 transition hover:text-primary sm:hidden"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Đăng nhập
-                  </Link>
+                  {!isInitializing && !isAuthenticated && (
+                    <Link
+                      href={ROUTES.LOGIN}
+                      className="text-sm font-medium text-foreground/90 transition hover:text-primary sm:hidden"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Đăng nhập
+                    </Link>
+                  )}
                 </motion.nav>
               </div>
             </motion.div>

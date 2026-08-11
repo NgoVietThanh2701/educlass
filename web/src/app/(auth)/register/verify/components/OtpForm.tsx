@@ -1,11 +1,39 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/constants/routes";
+import {
+  useResendOtp,
+  useVerifyOtp,
+} from "@/features/auth/hooks/use-verify-otp";
 
 const OTP_LENGTH = 6;
 
-export default function OtpForm() {
+interface OtpFormProps {
+  email?: string;
+}
+
+function getErrorMessage(error: unknown): string {
+  const apiError = error as {
+    response?: { data?: { message?: string } };
+  };
+  return (
+    apiError?.response?.data?.message ?? "Đã có lỗi xảy ra. Vui lòng thử lại."
+  );
+}
+
+export default function OtpForm({ email }: OtpFormProps) {
+  const router = useRouter();
+
+  const verifyMutation = useVerifyOtp();
+  const resendMutation = useResendOtp();
+
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
@@ -101,21 +129,92 @@ export default function OtpForm() {
     focusInput(lastIndex);
   };
 
-  const handleOTP = () => {
-    const otpCode = otp.join("");
-    if (otpCode.length !== OTP_LENGTH) return;
-    console.log("OTP:", otpCode);
-    // TODO: gọi API verify
+  const handleVerify = () => {
+    if (!email) {
+      setError("Vui lòng đăng ký trước khi xác thực.");
+      return;
+    }
+
+    setError(null);
+    setNotice(null);
+
+    const code = otp.join("");
+    if (code.length !== OTP_LENGTH) return;
+
+    verifyMutation.mutate(
+      { email, code },
+      {
+        onSuccess: () => {
+          router.push(ROUTES.HOME);
+        },
+        onError: (err) => {
+          setError(getErrorMessage(err));
+        },
+      },
+    );
+  };
+
+  const handleResend = () => {
+    if (!email) {
+      setError("Vui lòng đăng ký trước khi xác thực.");
+      return;
+    }
+
+    setError(null);
+    setNotice(null);
+
+    resendMutation.mutate(
+      { email },
+      {
+        onSuccess: () => {
+          setNotice("Mã OTP mới đã được gửi về email của bạn.");
+        },
+        onError: (err) => {
+          setError(getErrorMessage(err));
+        },
+      },
+    );
   };
 
   const isComplete = otp.every(Boolean);
+  const isPending = verifyMutation.isPending || resendMutation.isPending;
 
   return (
     <div className="flex items-center justify-center">
-      <div className="flex flex-col items-center gap-7">
-        <h3 className="text-lg font-medium text-green-600">
-          Nhập mã OTP tại đây
-        </h3>
+      <div className="flex w-full max-w-sm flex-col items-center gap-7">
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-slate-900 dark:text-slate-50">
+            Nhập mã OTP
+          </h3>
+
+          {email ? (
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Chúng tôi đã gửi mã xác thực tới <strong>{email}</strong>
+            </p>
+          ) : (
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Vui lòng đăng ký trước để xác thực email.
+            </p>
+          )}
+        </div>
+
+        {error && (
+          <div
+            role="alert"
+            className="w-full rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400"
+          >
+            {error}
+          </div>
+        )}
+
+        {notice && (
+          <p
+            role="status"
+            className="text-sm text-green-600 dark:text-green-400"
+          >
+            {notice}
+          </p>
+        )}
 
         <div className="flex gap-3">
           {otp.map((value, index) => (
@@ -133,27 +232,38 @@ export default function OtpForm() {
               onChange={(e) => handleInput(e, index)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               onPaste={(e) => handlePaste(e, index)}
+              aria-label={`Mã OTP vị trí ${index + 1}`}
               className="
                 h-12 w-11 rounded-md border border-[#999]
                 text-center text-lg outline-none transition
-                focus:border-[#3B71CA]
+                focus:border-primary dark:bg-neutral-800 dark:text-slate-50
               "
             />
           ))}
         </div>
 
-        <button
-          type="button"
-          onClick={handleOTP}
-          disabled={!isComplete}
-          className="
-            mx-auto rounded-md bg-blue-600 px-5 py-2
-            text-white transition
-            disabled:cursor-not-allowed disabled:opacity-50
-          "
-        >
-          Submit
-        </button>
+        <div className="flex w-full flex-col items-center gap-3">
+          <Button
+            type="button"
+            className="w-full"
+            disabled={!isComplete || isPending}
+            onClick={handleVerify}
+          >
+            {verifyMutation.isPending ? "Đang xác thực..." : "Submit"}
+          </Button>
+
+          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+            <span>Không nhận được mã?</span>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={isPending}
+              className="font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {resendMutation.isPending ? "Đang gửi..." : "Gửi lại"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

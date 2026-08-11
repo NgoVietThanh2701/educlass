@@ -3,6 +3,7 @@ import "./globals.css";
 import { Inter, Lexend } from "next/font/google";
 import { cn } from "@/lib/utils";
 import QueryProvider from "@/providers/query-provider";
+import ToasterProvider from "@/providers/toaster.provider";
 import { AuthProvider } from "@/providers/auth-provider";
 
 export const metadata: Metadata = {
@@ -33,6 +34,7 @@ export default function RootLayout({
         <QueryProvider>
           <AuthProvider>{children}</AuthProvider>
         </QueryProvider>
+        <ToasterProvider />
       </body>
     </html>
   );

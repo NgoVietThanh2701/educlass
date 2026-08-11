@@ -5,10 +5,16 @@ export const AUTH_QUERY_KEYS = {
   me: ["auth", "me"] as const,
 };
 
-export function useMe() {
+interface UseMeOptions {
+  /** Whether the session-restoration request should run (set false when no session marker exists). */
+  enabled?: boolean;
+}
+
+export function useMe(options?: UseMeOptions) {
   return useQuery({
     queryKey: AUTH_QUERY_KEYS.me,
     queryFn: getMe,
     retry: false,
+    enabled: options?.enabled ?? true,
   });
 }

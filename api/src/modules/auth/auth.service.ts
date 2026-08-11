@@ -180,6 +180,14 @@ export class AuthService {
     });
   }
 
+  // Logout user
+  async logout(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
+    });
+  }
+
   // =============== private function
   private async generateTokens(
     userId: string,

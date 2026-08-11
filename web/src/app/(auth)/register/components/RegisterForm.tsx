@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { FormInput } from "@/components/forms/form-input";
 import { FormPassword } from "@/components/forms/form-password";
 import { GoogleIcon } from "@/components/icons";
@@ -13,13 +15,17 @@ import {
   registerSchema,
 } from "@/features/auth/schemas/register.schema";
 import { RoleUser } from "@/types/role.type";
+import { RegisterRequest } from "@/features/auth/types/register-request.type";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 export default function RegisterForm() {
   const router = useRouter();
   const registerMutation = useRegister();
+
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -33,15 +39,32 @@ export default function RegisterForm() {
   });
 
   const onSubmit = (values: RegisterFormValues) => {
-    registerMutation.mutate(values, {
-      onSuccess: (response) => {
-        console.log(response);
+    setError(null);
 
-        router.push(ROUTES.HOME);
+    // Chỉ gửi đúng payload API mong đợi (bỏ confirmPassword chỉ dùng để validate UI)
+    const payload: RegisterRequest = {
+      email: values.email,
+      fullName: values.fullName,
+      password: values.password,
+      role: values.role,
+    };
+
+    registerMutation.mutate(payload, {
+      onSuccess: () => {
+        toast.success("Đăng ký thành công!");
+        router.push(
+          `${ROUTES.REGISTER_VERIFY}?email=${encodeURIComponent(values.email)}`,
+        );
       },
 
-      onError: (error) => {
-        console.error(error);
+      onError: (err) => {
+        const apiError = err as {
+          response?: { data?: { message?: string } };
+        };
+        setError(
+          apiError?.response?.data?.message ??
+            "Đã có lỗi xảy ra. Vui lòng thử lại.",
+        );
       },
     });
   };
@@ -51,6 +74,15 @@ export default function RegisterForm() {
       <h1 className="mb-8 text-3xl font-bold text-slate-900 dark:text-slate-50">
         Sign up
       </h1>
+
+      {error && (
+        <div
+          role="alert"
+          className="mb-6 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400"
+        >
+          {error}
+        </div>
+      )}
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* Email */}
