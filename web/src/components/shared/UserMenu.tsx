@@ -43,12 +43,7 @@ export default function UserMenu() {
     clearSessionMarker();
     clearAuth();
     router.push(ROUTES.HOME);
-  }, [
-    logoutMutation.isSuccess,
-    logoutMutation.isError,
-    clearAuth,
-    router,
-  ]);
+  }, [logoutMutation.isSuccess, logoutMutation.isError, clearAuth, router]);
 
   // Get initials from fullName for a compact avatar
   const fullName = user?.fullName ?? "";

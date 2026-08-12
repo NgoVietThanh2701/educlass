@@ -1,9 +1,10 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
+
+// Dashboard-scoped styles (Tailwind utilities for the sidebar/header).
+import "./dashboard.css";
+
+import DashboardShell from "@/components/layout/dashboard/DashboardShell";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex min-h-screen">
-      <main className="flex-1">{children}</main>
-    </div>
-  );
+  return <DashboardShell>{children}</DashboardShell>;
 }

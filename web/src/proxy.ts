@@ -32,13 +32,13 @@ export async function proxy(request: NextRequest) {
 }
 
 function isProtectedPath(pathname: string): boolean {
-  return pathname.startsWith("/dashboard");
+  return pathname.startsWith("/dashboaraaa");
 }
 
 function isAuthPath(pathname: string): boolean {
   return pathname === "/login" || pathname === "/register";
 }
 
-export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/register"],
-};
+// export const config = {
+//   matcher: ["/dashboard/:path*", "/login", "/register"],
+// };

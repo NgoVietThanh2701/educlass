@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import Container from "@/components/layout/public/Container";
 import Logo from "@/components/shared/Logo";
-import UserMenu from "@/components/layout/public/UserMenu";
+import UserMenu from "@/components/shared/UserMenu";
 import { publicNavItems } from "@/constants/navigation";
 import { collapseMotion, fadeSlideMotion } from "@/lib/motion";
 import { Menu, X } from "lucide-react";

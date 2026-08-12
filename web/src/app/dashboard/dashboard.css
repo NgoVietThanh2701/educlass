@@ -1,0 +1,99 @@
+/*
+  Dashboard-scoped component styles.
+  Imported ONLY by app/dashboard/layout.tsx so these utilities do not
+  leak into the rest of the application.
+
+  Values are mapped to the existing design tokens (CSS variables) defined
+  in globals.css (--primary, --muted-foreground, --accent, --border, ...).
+*/
+
+/* ---- Sidebar menu items ---- */
+.menu-item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
+}
+
+.menu-item-active {
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+}
+
+.menu-item-inactive {
+  color: var(--muted-foreground);
+}
+
+.menu-item-inactive:hover {
+  background-color: var(--accent);
+  color: var(--foreground);
+}
+
+.menu-item-icon-active {
+  color: var(--primary);
+}
+
+.menu-item-icon-inactive {
+  color: var(--muted-foreground);
+}
+
+.menu-item:hover .menu-item-icon-inactive {
+  color: var(--foreground);
+}
+
+/* ---- Submenu (dropdown) items ---- */
+.menu-dropdown-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.menu-dropdown-item-active {
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+}
+
+.menu-dropdown-item-inactive {
+  color: var(--muted-foreground);
+}
+
+.menu-dropdown-item-inactive:hover {
+  background-color: var(--accent);
+  color: var(--foreground);
+}
+
+/* ---- Sidebar section labels ---- */
+.menu-section-label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  line-height: 1.25rem;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+/* Hide scrollbars for the sidebar nav overflow area */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}

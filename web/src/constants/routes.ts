@@ -1,9 +1,25 @@
-export const ROUTES = {
-  HOME: "/",
+const DASHBOARD = "/dashboard";
 
+export const ROUTES = {
+  // Public routes
+  HOME: "/",
   LOGIN: "/login",
   REGISTER: "/register",
   REGISTER_VERIFY: "/register/verify",
 
-  DASHBOARD: "/dashboard",
+  // Dashboard routes
+  DASHBOARD: DASHBOARD,
+  COURSE: DASHBOARD + "/course",
+  COURSE_LIST: DASHBOARD + "/course",
+  COURSE_CREATE: DASHBOARD + "/course/new",
+  COURSE_DETAIL: DASHBOARD + "/course/:id",
+  ASSESSMENT: DASHBOARD + "/assessment",
+  ASSESSMENT_LIST: DASHBOARD + "/assessment",
+  ASSESSMENT_CREATE: DASHBOARD + "/assessment/new",
+  ASSESSMENT_DETAIL: DASHBOARD + "/assessment/:id",
+  MESSAGE: DASHBOARD + "/message",
+  MESSAGE_INBOX: DASHBOARD + "/message",
+  MESSAGE_COMPOSE: DASHBOARD + "/message/compose",
+  SETTINGS: DASHBOARD + "/settings",
+  HELP: DASHBOARD + "/help",
 };
