@@ -72,7 +72,7 @@ CREATE TABLE "courses" (
     "slug" TEXT NOT NULL,
     "shortDescription" TEXT,
     "description" TEXT,
-    "thumbnailObjectKey" TEXT,
+    "thumbnailObjectKey" TEXT NOT NULL,
     "level" "CourseLevel" NOT NULL DEFAULT 'ALL',
     "language" TEXT NOT NULL DEFAULT 'vi',
     "price" DECIMAL(10,2) NOT NULL DEFAULT 0,

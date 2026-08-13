@@ -21,7 +21,7 @@ export class CourseResponseDto {
   description?: string | null;
 
   @ApiPropertyOptional()
-  thumbnailUrl?: string | null;
+  thumbnailUrl: string;
 
   @ApiProperty({ enum: CourseLevel })
   level: CourseLevel;

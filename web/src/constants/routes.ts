@@ -13,6 +13,7 @@ export const ROUTES = {
   COURSE_LIST: DASHBOARD + "/course",
   COURSE_CREATE: DASHBOARD + "/course/new",
   COURSE_DETAIL: DASHBOARD + "/course/:id",
+  COURSE_EDIT: DASHBOARD + "/course/:id/edit",
   ASSESSMENT: DASHBOARD + "/assessment",
   ASSESSMENT_LIST: DASHBOARD + "/assessment",
   ASSESSMENT_CREATE: DASHBOARD + "/assessment/new",

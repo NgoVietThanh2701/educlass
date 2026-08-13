@@ -32,7 +32,7 @@ export async function proxy(request: NextRequest) {
 }
 
 function isProtectedPath(pathname: string): boolean {
-  return pathname.startsWith("/dashboaraaa");
+  return pathname.startsWith("/dashboard");
 }
 
 function isAuthPath(pathname: string): boolean {

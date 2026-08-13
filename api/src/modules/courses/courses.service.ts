@@ -58,12 +58,12 @@ export class CoursesService {
     dto: CreateCourseDto,
     file?: Express.Multer.File,
   ): Promise<CourseResponseDto> {
-    let thumbnailObjectKey: string | null | undefined;
-
-    if (file) {
-      const uploaded = await this.attachmentService.uploadImage(file, 'course-thumbnails');
-      thumbnailObjectKey = uploaded.objectKey;
+    if (!file) {
+      throw AppException.badRequest('Thumbnail is required');
     }
+
+    const uploaded = await this.attachmentService.uploadImage(file, 'course-thumbnails');
+    const thumbnailObjectKey = uploaded.objectKey;
 
     const maxAttempts = 10;
 

@@ -75,7 +75,7 @@ type CourseListMapperInput = {
   title: string;
   slug: string;
   shortDescription: string | null;
-  thumbnailObjectKey: string | null;
+  thumbnailObjectKey: string;
   level: CourseLevel;
   language: string;
   price: Prisma.Decimal;
@@ -97,13 +97,11 @@ export type CoursePublicDetailMapperInput = Prisma.CourseGetPayload<{
   select: typeof coursePublicDetailSelect;
 }>;
 
-function buildThumbnailUrl(thumbnailObjectKey: string | null) {
-  return thumbnailObjectKey
-    ? cloudinary.url(thumbnailObjectKey, {
-        resource_type: 'image',
-        secure: true,
-      })
-    : null;
+function buildThumbnailUrl(thumbnailObjectKey: string) {
+  return cloudinary.url(thumbnailObjectKey, {
+    resource_type: 'image',
+    secure: true,
+  });
 }
 
 export function toCourseListItem(course: CourseListMapperInput): CourseListItemDto {

@@ -9,4 +9,11 @@ export const API_ENDPOINT = {
 
   // users
   ME: "/users/me",
+
+  // courses
+  COURSE_SECTIONS: "/courses", // base path; sections live at /courses/:courseId/sections (teacher)
+  COURSE_LESSONS: "/courses", // base path; lessons live at /courses/:courseId/sections/:sectionId/lessons (teacher)
+  TEACHER_COURSES: "/teacher/courses",
+  STUDENT_COURSES: "/student/courses",
+  PUBLIC_COURSES: "/public/courses",
 } as const;

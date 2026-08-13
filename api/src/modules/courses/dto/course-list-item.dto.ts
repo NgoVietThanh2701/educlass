@@ -17,8 +17,8 @@ export class CourseListItemDto {
   @ApiPropertyOptional()
   shortDescription?: string | null;
 
-  @ApiPropertyOptional()
-  thumbnailUrl?: string | null;
+  @ApiProperty()
+  thumbnailUrl: string;
 
   @ApiProperty({ enum: CourseLevel })
   level: CourseLevel;
