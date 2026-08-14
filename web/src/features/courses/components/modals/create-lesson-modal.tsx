@@ -19,7 +19,7 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { getErrorMessage } from "@/lib/error-message";
+import { toast } from "sonner";
 import {
   type CreateLessonFormValues,
   LESSON_TYPE_OPTIONS,
@@ -27,6 +27,7 @@ import {
   createLessonSchema,
 } from "../../schemas/create-lesson.schema";
 import { useCreateLesson } from "../../hooks/use-create-lesson";
+import { getVideoDurationSeconds } from "../../utils/video";
 
 export interface CreateLessonModalProps {
   courseId: string;
@@ -54,9 +55,9 @@ export default function CreateLessonModal({
   onOpenChange,
   onSuccess,
 }: CreateLessonModalProps) {
-  const [error, setError] = useState<string | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const createLessonMutation = useCreateLesson({ courseId, sectionId });
@@ -79,13 +80,26 @@ export default function CreateLessonModal({
 
   const close = () => onOpenChange(false);
 
-  const handleVideoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const handleVideoChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     if (videoPreview) {
       URL.revokeObjectURL(videoPreview);
     }
     setVideoPreview(file ? URL.createObjectURL(file) : null);
     setVideoFile(file);
+
+    // Auto-detect the video duration and pre-fill the form so the teacher
+    // doesn't have to read it manually (still editable afterwards).
+    if (file) {
+      const duration = Math.round(await getVideoDurationSeconds(file));
+      form.setValue(
+        "durationSeconds",
+        duration > 0 ? duration : undefined,
+        { shouldValidate: true, shouldDirty: true },
+      );
+    } else {
+      form.setValue("durationSeconds", undefined, { shouldValidate: true });
+    }
   };
 
   const clearVideo = () => {
@@ -94,15 +108,15 @@ export default function CreateLessonModal({
     }
     setVideoPreview(null);
     setVideoFile(null);
+    form.setValue("durationSeconds", undefined, { shouldValidate: true });
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
   const onSubmit = (values: CreateLessonFormValues) => {
-    setError(null);
     if (!sectionId) {
-      setError("Vui lòng chọn một phần để thêm bài học.");
+      toast.error("Vui lòng chọn một phần để thêm bài học.");
       return;
     }
 
@@ -117,9 +131,11 @@ export default function CreateLessonModal({
           unlockRule: values.unlockRule,
         },
         video: videoFile,
+        onUploadProgress: setUploadProgress,
       },
       {
         onSuccess: () => {
+          setUploadProgress(null);
           form.reset({
             title: "",
             description: "",
@@ -132,7 +148,9 @@ export default function CreateLessonModal({
           close();
           onSuccess?.();
         },
-        onError: (err) => setError(getErrorMessage(err)),
+        onError: () => {
+          setUploadProgress(null);
+        },
       },
     );
   };
@@ -263,26 +281,45 @@ export default function CreateLessonModal({
                 )}
               </div>
 
-              {videoFile && (
+              {uploadProgress !== null && (
+                <div className="space-y-1">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full bg-primary transition-all"
+                      style={{ width: `${Math.min(100, Math.max(0, uploadProgress))}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Đang tải video lên CDN… {uploadProgress}%
+                  </p>
+                </div>
+              )}
+
+                {videoFile && (
                 <FormField
                   htmlFor="durationSeconds"
                   label="Thời lượng (giây)"
                   error={form.formState.errors.durationSeconds?.message}
                 >
-                  <Input
-                    id="durationSeconds"
-                    type="number"
-                    min={0}
-                    step={1}
-                    placeholder="Ví dụ: 360"
-                    disabled={isPending}
-                    {...form.register("durationSeconds", {
-                      setValueAs: (v: unknown) =>
-                        v === "" || v === undefined || v === null
-                          ? undefined
-                          : Number(v),
-                    })}
-                  />
+                  <div className="flex flex-col gap-1">
+                    <Input
+                      id="durationSeconds"
+                      type="number"
+                      min={0}
+                      step={1}
+                      placeholder="Ví dụ: 360"
+                      disabled={isPending}
+                      {...form.register("durationSeconds", {
+                        setValueAs: (v: unknown) =>
+                          v === "" || v === undefined || v === null
+                            ? undefined
+                            : Number(v),
+                      })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Đã lấy tự động từ video — có thể chỉnh sửa.
+                    </p>
+                  </div>
                 </FormField>
               )}
             </FormField>
@@ -331,15 +368,6 @@ export default function CreateLessonModal({
               ))}
             </Select>
           </FormField>
-
-          {error && (
-            <div
-              role="alert"
-              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400"
-            >
-              {error}
-            </div>
-          )}
         </form>
 
         <DialogFooter>
@@ -362,7 +390,9 @@ export default function CreateLessonModal({
             {isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Đang tạo...
+                {uploadProgress !== null
+                  ? `Đang tải video ${uploadProgress}%...`
+                  : "Đang tạo..."}
               </>
             ) : (
               <>

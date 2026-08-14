@@ -1,6 +1,6 @@
 import { AppException } from '@common/exceptions/app.exception';
 import { Injectable } from '@nestjs/common';
-import { UploadApiResponse, v2 as cloudinary } from 'cloudinary';
+import { UploadApiErrorResponse, UploadApiResponse, v2 as cloudinary } from 'cloudinary';
 import {
   UPLOAD_ALLOWED_MIME_TYPES,
   UPLOAD_IMAGE_MIME_TYPES,
@@ -52,6 +52,28 @@ export class AttachmentService {
 
   async uploadImage(file: Express.Multer.File, folder = 'course-thumbnails') {
     return this.uploadFile(file, folder, UPLOAD_IMAGE_MIME_TYPES);
+  }
+
+  /**
+   * Best-effort delete of a previously uploaded Cloudinary asset. Resolves
+   * `true` when the asset was removed (or had already gone), `false` if the CDN
+   * reported an error. Never rejects — callers use this for cleanup during a
+   * record deletion, where a CDN hiccup must not block the DB write.
+   */
+  async removeFile(objectKey: string, resourceType = 'auto'): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      void cloudinary.uploader.destroy(
+        objectKey,
+        { resource_type: resourceType },
+        (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
+          if (error) {
+            resolve(false);
+            return;
+          }
+          resolve(result?.result === 'ok' || result?.result === 'deleted');
+        },
+      );
+    });
   }
 
   private validateFile(file: Express.Multer.File, allowedMimeTypes: Set<string>) {

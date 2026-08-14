@@ -14,6 +14,8 @@ export const ROUTES = {
   COURSE_CREATE: DASHBOARD + "/course/new",
   COURSE_DETAIL: DASHBOARD + "/course/:id",
   COURSE_EDIT: DASHBOARD + "/course/:id/edit",
+  COURSE_ASSESSMENT_CREATE:
+    DASHBOARD + "/course/:courseId/section/:sectionId/assessment/new",
   ASSESSMENT: DASHBOARD + "/assessment",
   ASSESSMENT_LIST: DASHBOARD + "/assessment",
   ASSESSMENT_CREATE: DASHBOARD + "/assessment/new",

@@ -3,10 +3,11 @@ import { SuccessMessage } from '@common/decorators/message.decorator';
 import { RolesUser } from '@common/decorators/roles.decorator';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { RolesUserGuard } from '@common/guards/role-user.guard';
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RoleUser } from '@prisma/client';
 import { CreateSectionDto } from './dto/create-section.dto';
+import { ReorderSectionsDto } from './dto/reorder-sections.dto';
 import { SectionResponseDto } from './dto/section-response.dto';
 import { UpdateSectionDto } from './dto/update-section.dto';
 import { SectionsService } from './sections.service';
@@ -43,6 +44,17 @@ export class SectionsController {
     return this.sectionsService.findAll(courseId, teacherId);
   }
 
+  @Patch('reorder')
+  @SuccessMessage('Reordered sections successfully')
+  @ApiOperation({ summary: 'Reorder the sections of a course (order rewritten to 1..n)' })
+  reorder(
+    @Param('courseId') courseId: string,
+    @CurrentUser('id') teacherId: string,
+    @Body() dto: ReorderSectionsDto,
+  ) {
+    return this.sectionsService.reorder(courseId, dto.orderedIds, teacherId);
+  }
+
   @Get(':sectionId')
   @SuccessMessage('Retrieved section successfully')
   @ApiOperation({ summary: 'Get section detail' })
@@ -66,5 +78,18 @@ export class SectionsController {
     @Body() dto: UpdateSectionDto,
   ) {
     return this.sectionsService.update(courseId, sectionId, teacherId, dto);
+  }
+
+  @Delete(':sectionId')
+  @SuccessMessage('Deleted section successfully')
+  @ApiOperation({
+    summary: 'Delete a section, its lessons/assessments and compact remaining orders',
+  })
+  remove(
+    @Param('courseId') courseId: string,
+    @Param('sectionId') sectionId: string,
+    @CurrentUser('id') teacherId: string,
+  ) {
+    return this.sectionsService.remove(courseId, sectionId, teacherId);
   }
 }

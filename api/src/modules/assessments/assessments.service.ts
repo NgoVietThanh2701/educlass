@@ -44,6 +44,49 @@ export class AssessmentsService {
     return toAssessmentResponse(assessment);
   }
 
+  async reorderQuestions(assessmentId: string, orderedIds: string[]) {
+    const assessment = await this.prisma.assessment.findUnique({
+      where: { id: assessmentId },
+      select: { id: true, status: true, archivedAt: true },
+    });
+    if (!assessment) throw AppException.notFound('Assessment not found');
+    if (assessment.archivedAt !== null || assessment.status !== AssessmentStatus.DRAFT) {
+      throw AppException.badRequest('Assessment status not DRAFT');
+    }
+
+    const questions = await this.prisma.assessmentQuestion.findMany({
+      where: { assessmentId },
+      select: { id: true },
+    });
+    const existingIds = new Set(questions.map((question) => question.id));
+    if (orderedIds.length !== existingIds.size || orderedIds.some((id) => !existingIds.has(id))) {
+      throw AppException.badRequest(
+        'Ordered question list does not match the assessment questions',
+      );
+    }
+
+    // `[assessmentId, order]` is a UNIQUE constraint, so we first move every
+    // question to a unique temporary negative order, then to its final 1..n order.
+    await this.prisma.$transaction([
+      ...orderedIds.map((id, index) =>
+        this.prisma.assessmentQuestion.update({
+          where: { id },
+          data: { order: -(index + 1) },
+          select: { id: true },
+        }),
+      ),
+      ...orderedIds.map((id, index) =>
+        this.prisma.assessmentQuestion.update({
+          where: { id },
+          data: { order: index + 1 },
+          select: { id: true },
+        }),
+      ),
+    ]);
+
+    return { orderedIds };
+  }
+
   async findAll(sectionId: string) {
     const assessments = await this.prisma.assessment.findMany({
       where: { sectionId, archivedAt: null },

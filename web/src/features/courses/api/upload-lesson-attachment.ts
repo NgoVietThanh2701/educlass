@@ -4,15 +4,16 @@ import { ApiResponse } from "@/types/api";
 import type { LessonAttachmentResponse } from "../types/lesson.type";
 
 /**
- * Upload a single file as a lesson attachment (frontend-driven upload step).
+ * Upload a single file as a lesson **attachment** (non-video files such as
+ * PDF/DOC) — routed through the backend which pushes it to Cloudinary.
+ *
+ * NOTE: For VIDEO lessons the file is uploaded DIRECTLY from the browser to
+ * Cloudinary (see `@/lib/cloudinary`), bypassing the backend entirely — that
+ * path is handled in `use-create-lesson.ts`. This endpoint remains for general
+ * lesson attachments (documents, etc.).
  *
  * Backend: POST /api/v1/courses/:courseId/sections/:sectionId/lessons/:lessonId/attachments
  *   - `multipart/form-data`, single file part named `file`.
- *   - The backend accepts all `UPLOAD_ALLOWED_MIME_TYPES` including `video/mp4`.
- *
- * NOTE: video processing/streaming is handled at the **frontend** side. We only
- * need the returned `objectKey` so we can attach the video to the lesson content
- * via `upsertLessonContent`. No transcoding happens here.
  */
 export async function uploadLessonAttachment(
   courseId: string,

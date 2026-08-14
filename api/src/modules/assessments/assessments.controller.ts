@@ -24,6 +24,7 @@ import {
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { ChangeAssessmentStatusDto, UpdateAssessmentDto } from './dto/update-assessment.dto';
 import { AddQuestionDto } from './dto/add-question.dto';
+import { ReorderQuestionsDto } from './dto/reorder-questions.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { AddOptionDto } from './dto/add-option.dto';
 import { UpdateOptionDto } from './dto/update-option.dto';
@@ -132,6 +133,14 @@ export class AssessmentsController {
     @Body() dto: AddQuestionDto,
   ) {
     return this.assessmentsService.addQuestion(assessmentId, sectionId, dto);
+  }
+
+  @Patch(':assessmentId/questions/reorder')
+  @StrictThrottle()
+  @SuccessMessage('Reordered questions successfully')
+  @ApiOperation({ summary: 'Reorder the questions of an assessment (1..n)' })
+  reorderQuestions(@Param('assessmentId') assessmentId: string, @Body() dto: ReorderQuestionsDto) {
+    return this.assessmentsService.reorderQuestions(assessmentId, dto.orderedIds);
   }
 
   @Patch(':assessmentId/questions/:questionId')

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -17,7 +16,6 @@ import {
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { getErrorMessage } from "@/lib/error-message";
 import { useCreateSection } from "../../hooks/use-create-section";
 import {
   createSectionSchema,
@@ -49,8 +47,6 @@ export default function CreateSectionModal({
   onOpenChange,
   onSuccess,
 }: CreateSectionModalProps) {
-  const [error, setError] = useState<string | null>(null);
-
   const createSectionMutation = useCreateSection(courseId);
 
   const form = useForm<CreateSectionFormValues>({
@@ -61,7 +57,6 @@ export default function CreateSectionModal({
   const close = () => onOpenChange(false);
 
   const onSubmit = (values: CreateSectionFormValues) => {
-    setError(null);
     createSectionMutation.mutate(
       {
         title: values.title,
@@ -73,7 +68,6 @@ export default function CreateSectionModal({
           close();
           onSuccess?.();
         },
-        onError: (err) => setError(getErrorMessage(err)),
       },
     );
   };
@@ -119,15 +113,6 @@ export default function CreateSectionModal({
               {...form.register("description")}
             />
           </FormField>
-
-          {error && (
-            <div
-              role="alert"
-              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400"
-            >
-              {error}
-            </div>
-          )}
         </form>
 
         <DialogFooter>

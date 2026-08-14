@@ -20,9 +20,9 @@ export interface CreateLessonRequest {
 
 /** Payload matching `LessonContentDto` — media is attached *after* creation. */
 export interface LessonContentRequest {
-  objectKey?: string;
-  videoDuration?: number;
-  textContent?: string;
+  objectKey?: string | null;
+  videoDuration?: number | null;
+  textContent?: string | null;
 }
 
 /** Response matching `LessonAttachmentResponseDto`. */
@@ -49,9 +49,9 @@ export interface LessonResponse {
   isPreview: boolean;
   unlockRule: LessonUnlockRule;
   content?: {
-    objectKey?: string;
-    videoDuration?: number;
-    textContent?: string;
+    objectKey?: string | null;
+    videoDuration?: number | null;
+    textContent?: string | null;
   } | null;
   attachments: LessonAttachmentResponse[];
   createdAt: Date | string;

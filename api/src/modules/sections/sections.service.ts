@@ -1,5 +1,6 @@
 import { AppException } from '@common/exceptions/app.exception';
 import { PrismaErrorCode } from '@common/constants/prisma-error.constant';
+import { AttachmentService } from '@common/services/attachment.service';
 import { CourseAccessService } from '@common/services/course-access.service';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
@@ -12,6 +13,7 @@ export class SectionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly courseAccess: CourseAccessService,
+    private readonly attachmentService: AttachmentService,
   ) {}
 
   async create(courseId: string, teacherId: string, dto: CreateSectionDto) {
@@ -83,6 +85,89 @@ export class SectionsService {
 
       throw error;
     }
+  }
+
+  async reorder(courseId: string, orderedIds: string[], teacherId: string) {
+    await this.courseAccess.ensureTeacherOwnsCourse(courseId, teacherId);
+
+    const sections = await this.prisma.section.findMany({
+      where: { courseId },
+      select: { id: true },
+    });
+    const existingIds = new Set(sections.map((section) => section.id));
+
+    if (orderedIds.length !== existingIds.size || orderedIds.some((id) => !existingIds.has(id))) {
+      throw AppException.badRequest('Ordered section list does not match the course sections');
+    }
+
+    // Rewrites the orders to 1..n inside one transaction. Because `[courseId, order]`
+    // is a UNIQUE constraint, updating straight to the final order could collide with
+    // another section's current order mid-transaction (e.g. swapping two adjacent
+    // orders). So we first move EVERY section to a unique temporary negative order,
+    // then to its final 1..n order — no intermediate state ever violates the index.
+    await this.prisma.$transaction([
+      ...orderedIds.map((id, index) =>
+        this.prisma.section.update({
+          where: { id },
+          data: { order: -(index + 1) },
+          select: { id: true },
+        }),
+      ),
+      ...orderedIds.map((id, index) =>
+        this.prisma.section.update({
+          where: { id },
+          data: { order: index + 1 },
+          select: { id: true },
+        }),
+      ),
+    ]);
+
+    return { orderedIds };
+  }
+
+  async remove(courseId: string, sectionId: string, teacherId: string) {
+    await this.courseAccess.ensureTeacherOwnsCourse(courseId, teacherId);
+    await this.getSectionInCourse(courseId, sectionId);
+
+    // Best-effort remove the Cloudinary assets of the section's lessons.
+    const lessons = await this.prisma.lesson.findMany({
+      where: { sectionId },
+      select: {
+        content: { select: { objectKey: true } },
+        attachments: { select: { objectKey: true, resourceType: true } },
+      },
+    });
+
+    const deletions = lessons.flatMap((lesson) => [
+      ...(lesson.content?.objectKey
+        ? [this.attachmentService.removeFile(lesson.content.objectKey, 'video')]
+        : []),
+      ...lesson.attachments.map((attachment) =>
+        this.attachmentService.removeFile(attachment.objectKey, attachment.resourceType),
+      ),
+    ]);
+    await Promise.allSettled(deletions);
+
+    // Cascades to lessons, assessments, contents, attachments, progress.
+    await this.prisma.section.delete({ where: { id: sectionId } });
+
+    // Compact the remaining sections' orders (1..n) so there are no gaps.
+    const remaining = await this.prisma.section.findMany({
+      where: { courseId },
+      orderBy: { order: 'asc' },
+      select: { id: true },
+    });
+    await this.prisma.$transaction(
+      remaining.map((section, index) =>
+        this.prisma.section.update({
+          where: { id: section.id },
+          data: { order: index + 1 },
+          select: { id: true },
+        }),
+      ),
+    );
+
+    return { id: sectionId };
   }
 
   private async ensureOrderAvailable(courseId: string, order: number, excludeSectionId?: string) {

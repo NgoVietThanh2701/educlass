@@ -18,6 +18,8 @@ import { RoleUser } from "@/types/role.type";
 import { useTeacherCourseDetail } from "../hooks/use-course-detail";
 import { useUpdateCourse } from "../hooks/use-update-course";
 import { useChangeCourseStatus } from "../hooks/use-change-course-status";
+import { useReorderSections } from "../hooks/use-reorder-sections";
+import { useReorderLessons } from "../hooks/use-reorder-lessons";
 import {
   CreateCourseFormValues,
   createCourseSchema,
@@ -29,9 +31,11 @@ import {
   type CreateCourseLevel,
 } from "../types/create-course.type";
 import type { CourseStatus } from "../types/course.type";
+import type { CourseDetailSection } from "../types/course-detail.type";
 import { CourseSections } from "./course-sections";
 import CreateSectionModal from "./modals/create-section-modal";
 import CreateLessonModal from "./modals/create-lesson-modal";
+import DeleteSectionModal from "./modals/delete-section-modal";
 
 const STATUS_OPTIONS: { value: CourseStatus; label: string }[] = [
   { value: "DRAFT", label: "Bản nháp" },
@@ -53,6 +57,10 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
   const [createLessonSectionId, setCreateLessonSectionId] = useState<
     string | null
+  >(null);
+  const [sections, setSections] = useState<CourseDetailSection[]>([]);
+  const [deleteSectionTarget, setDeleteSectionTarget] = useState<
+    CourseDetailSection | null
   >(null);
 
   const form = useForm<CreateCourseFormValues>({
@@ -85,6 +93,62 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
       learningOutcomes: course.learningOutcomes ?? "",
     });
   }, [course, form]);
+
+  // Keep the draggable curriculum tree in sync with the server data (which is
+  // refetched after creates/deletes/reorders). Uses React's documented
+  // "adjusting state during render" pattern — the prev value is tracked in
+  // *state* (not a ref), so it is safe for the React Compiler lint.
+  const [prevServerSections, setPrevServerSections] = useState<
+    CourseDetailSection[] | null
+  >(null);
+  if (course && prevServerSections !== course.sections) {
+    setPrevServerSections(course.sections);
+    setSections(course.sections);
+  }
+
+  const reorderSectionsMutation = useReorderSections(courseId);
+  const reorderLessonsMutation = useReorderLessons(courseId);
+  // True while any reorder is being persisted — the UI is read-only meanwhile so
+  // the user can't stack overlapping drag/drop or delete actions.
+  const isReordering =
+    reorderSectionsMutation.isPending || reorderLessonsMutation.isPending;
+
+  /** Move a section to the slot of another section (drag & drop reorder). */
+  const handleMoveSection = (fromId: string, toId: string) => {
+    const fromIndex = sections.findIndex((section) => section.id === fromId);
+    if (fromIndex === -1) return;
+    const from = sections[fromIndex];
+    if (from.id === toId) return;
+
+    const next = sections.filter((section) => section.id !== fromId);
+    const insertAt = next.findIndex((section) => section.id === toId);
+    if (insertAt === -1) return;
+    next.splice(insertAt, 0, from);
+
+    setSections(next);
+    reorderSectionsMutation.mutate(next.map((section) => section.id));
+  };
+
+  /** Move a lesson within its own section (never across sections). */
+  const handleMoveLesson = (sectionId: string, fromId: string, toId: string) => {
+    const section = sections.find((item) => item.id === sectionId);
+    if (!section) return;
+    const from = section.lessons.find((lesson) => lesson.id === fromId);
+    if (!from || from.id === toId) return;
+
+    const lessons = section.lessons.filter((lesson) => lesson.id !== fromId);
+    const insertAt = lessons.findIndex((lesson) => lesson.id === toId);
+    if (insertAt === -1) return;
+    lessons.splice(insertAt, 0, from);
+
+    setSections((prev) =>
+      prev.map((item) => (item.id === sectionId ? { ...item, lessons } : item)),
+    );
+    reorderLessonsMutation.mutate({
+      sectionId,
+      orderedIds: lessons.map((lesson) => lesson.id),
+    });
+  };
 
   const goBack = () => router.push(ROUTES.COURSE_DETAIL.replace(":id", courseId));
 
@@ -422,11 +486,27 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
           </Button>
         </div>
         <CourseSections
-          sections={course.sections}
+          courseId={courseId}
+          sections={sections}
+          busy={isReordering}
           onAddLesson={(sectionId) => {
             setCreateLessonSectionId(sectionId);
             setIsCreateLessonOpen(true);
           }}
+          onMoveSection={handleMoveSection}
+          onMoveLesson={handleMoveLesson}
+          onDeleteSection={(sectionId) => {
+            const target = sections.find((section) => section.id === sectionId);
+            if (target) setDeleteSectionTarget(target);
+          }}
+          onAddAssessment={(sectionId) =>
+            router.push(
+              ROUTES.COURSE_ASSESSMENT_CREATE.replace(":courseId", courseId).replace(
+                ":sectionId",
+                sectionId,
+              ),
+            )
+          }
         />
       </section>
 
@@ -442,6 +522,17 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
         open={isCreateLessonOpen}
         onOpenChange={setIsCreateLessonOpen}
       />
+
+      {deleteSectionTarget && (
+        <DeleteSectionModal
+          courseId={courseId}
+          section={deleteSectionTarget}
+          open={!!deleteSectionTarget}
+          onOpenChange={(open) => {
+            if (!open) setDeleteSectionTarget(null);
+          }}
+        />
+      )}
     </div>
   );
 }

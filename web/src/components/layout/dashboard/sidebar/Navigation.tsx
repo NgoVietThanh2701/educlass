@@ -3,14 +3,12 @@ import {
   LayoutDashboard,
   BookOpen,
   MessageSquare,
-  ListChecks,
   Settings,
   HelpCircle,
   Plus,
   FolderOpen,
   Inbox,
   Send,
-  FileText,
 } from "lucide-react";
 
 export type NavItem = {
@@ -53,15 +51,6 @@ export const getNavItems = (role: string | undefined): NavItem[] => {
       subItems: [
         { name: "My Courses", path: ROUTES.COURSE_LIST, icon: <FolderOpen /> },
         { name: "New Course", path: ROUTES.COURSE_CREATE, icon: <Plus /> },
-      ],
-    },
-    {
-      name: "Assessments",
-      icon: <ListChecks />,
-      path: ROUTES.ASSESSMENT_LIST,
-      subItems: [
-        { name: "My Assessments", path: ROUTES.ASSESSMENT_LIST, icon: <FileText /> },
-        { name: "Create Assessment", path: ROUTES.ASSESSMENT_CREATE, icon: <Plus /> },
       ],
     },
     {

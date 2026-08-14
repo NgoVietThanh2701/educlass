@@ -155,6 +155,94 @@ export class LessonsService {
     }
   }
 
+  async remove(courseId: string, sectionId: string, lessonId: string, teacherId: string) {
+    await this.courseAccess.ensureTeacherOwnsCourse(courseId, teacherId);
+    await this.ensureSectionBelongsToCourse(courseId, sectionId);
+    await this.ensureLessonBelongsToSection(sectionId, lessonId);
+
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: {
+        id: true,
+        content: { select: { objectKey: true } },
+        attachments: { select: { objectKey: true, resourceType: true } },
+      },
+    });
+
+    if (!lesson) throw AppException.notFound('Lesson not found');
+
+    // Best-effort remove the linked Cloudinary assets so orphaned files don't
+    // pile up, but never let a CDN hiccup block the DB delete.
+    const deletions = [
+      ...(lesson.content?.objectKey
+        ? [this.attachmentService.removeFile(lesson.content.objectKey, 'video')]
+        : []),
+      ...lesson.attachments.map((attachment) =>
+        this.attachmentService.removeFile(attachment.objectKey, attachment.resourceType),
+      ),
+    ];
+    await Promise.allSettled(deletions);
+
+    // Cascades to LessonContent / LessonAttachment / LessonProgress.
+    await this.prisma.lesson.delete({ where: { id: lessonId } });
+
+    // Compact the remaining lessons' orders within the section (1..n).
+    const remaining = await this.prisma.lesson.findMany({
+      where: { sectionId },
+      orderBy: { order: 'asc' },
+      select: { id: true },
+    });
+    await this.prisma.$transaction(
+      remaining.map((lesson, index) =>
+        this.prisma.lesson.update({
+          where: { id: lesson.id },
+          data: { order: index + 1 },
+          select: { id: true },
+        }),
+      ),
+    );
+
+    return { id: lessonId };
+  }
+
+  async reorder(courseId: string, sectionId: string, orderedIds: string[], teacherId: string) {
+    await this.courseAccess.ensureTeacherOwnsCourse(courseId, teacherId);
+    await this.ensureSectionBelongsToCourse(courseId, sectionId);
+
+    const lessons = await this.prisma.lesson.findMany({
+      where: { sectionId },
+      select: { id: true },
+    });
+    const existingIds = new Set(lessons.map((lesson) => lesson.id));
+
+    if (orderedIds.length !== existingIds.size || orderedIds.some((id) => !existingIds.has(id))) {
+      throw AppException.badRequest('Ordered lesson list does not match the section lessons');
+    }
+
+    // Rewrites the orders to 1..n inside one transaction. Because `[sectionId, order]`
+    // is a UNIQUE constraint, updating straight to the final order could collide with
+    // another lesson's current order mid-transaction. We first move EVERY lesson to a
+    // unique temporary negative order, then to its final 1..n order.
+    await this.prisma.$transaction([
+      ...orderedIds.map((id, index) =>
+        this.prisma.lesson.update({
+          where: { id },
+          data: { order: -(index + 1) },
+          select: { id: true },
+        }),
+      ),
+      ...orderedIds.map((id, index) =>
+        this.prisma.lesson.update({
+          where: { id },
+          data: { order: index + 1 },
+          select: { id: true },
+        }),
+      ),
+    ]);
+
+    return { orderedIds };
+  }
+
   async upsertContent(
     courseId: string,
     sectionId: string,

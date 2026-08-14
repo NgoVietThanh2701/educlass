@@ -259,11 +259,6 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
                           <span className="flex-1 truncate text-sm">
                             {lesson.order}. {lesson.title}
                           </span>
-                          {lesson.isPreview && (
-                            <Badge variant="outline" className="shrink-0">
-                              Xem thử
-                            </Badge>
-                          )}
                           <span className="shrink-0 text-xs text-muted-foreground">
                             {LESSON_TYPE_LABELS[lesson.type]}
                           </span>

@@ -6,6 +6,7 @@ import { RolesUserGuard } from '@common/guards/role-user.guard';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -25,6 +26,7 @@ import { LessonAttachmentResponseDto } from './dto/lesson-attachment-response.dt
 import { LessonContentDto } from './dto/lesson-content.dto';
 import { LessonProgressResponseDto } from './dto/lesson-progress-response.dto';
 import { LessonResponseDto } from './dto/lesson-response.dto';
+import { ReorderLessonsDto } from './dto/reorder-lessons.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { UpdateLessonProgressDto } from './dto/update-lesson-progress.dto';
 import { LessonsService } from './lessons.service';
@@ -91,6 +93,19 @@ export class LessonsController {
     return this.lessonsService.findOneForStudent(courseId, sectionId, lessonId, studentId);
   }
 
+  @Patch('reorder')
+  @RolesUser(RoleUser.TEACHER)
+  @SuccessMessage('Reordered lessons successfully')
+  @ApiOperation({ summary: 'Reorder lessons within a section (Only Teacher)' })
+  reorder(
+    @Param('courseId') courseId: string,
+    @Param('sectionId') sectionId: string,
+    @CurrentUser('id') teacherId: string,
+    @Body() dto: ReorderLessonsDto,
+  ) {
+    return this.lessonsService.reorder(courseId, sectionId, dto.orderedIds, teacherId);
+  }
+
   @Patch(':lessonId')
   @RolesUser(RoleUser.TEACHER)
   @SuccessMessage('Updated lesson successfully')
@@ -104,6 +119,19 @@ export class LessonsController {
     @Body() dto: UpdateLessonDto,
   ) {
     return this.lessonsService.update(courseId, sectionId, lessonId, teacherId, dto);
+  }
+
+  @Delete(':lessonId')
+  @RolesUser(RoleUser.TEACHER)
+  @SuccessMessage('Deleted lesson successfully')
+  @ApiOperation({ summary: 'Delete a lesson and its content/attachments (Only Teacher)' })
+  remove(
+    @Param('courseId') courseId: string,
+    @Param('sectionId') sectionId: string,
+    @Param('lessonId') lessonId: string,
+    @CurrentUser('id') teacherId: string,
+  ) {
+    return this.lessonsService.remove(courseId, sectionId, lessonId, teacherId);
   }
 
   @Post(':lessonId/content')

@@ -6,9 +6,9 @@ export type LessonUnlockRule = "FREE" | "PREVIOUS_LESSON" | "PREVIOUS_ASSESSMENT
 export type AssessmentStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
 export interface CourseDetailLessonContent {
-  objectKey?: string;
-  videoDuration?: number;
-  textContent?: string;
+  objectKey?: string | null;
+  videoDuration?: number | null;
+  textContent?: string | null;
 }
 
 export interface CourseDetailAttachment {

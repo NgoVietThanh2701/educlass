@@ -11,7 +11,7 @@ interface BrandProps {
 export function Brand({ showText }: BrandProps) {
   return (
     <Link
-      href={ROUTES.DASHBOARD}
+      href={ROUTES.HOME}
       className="flex shrink-0 items-center gap-2"
       aria-label="EduClass dashboard"
     >
