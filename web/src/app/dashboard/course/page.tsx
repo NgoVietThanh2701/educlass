@@ -7,6 +7,7 @@ import { ROUTES } from "@/constants/routes";
 import { Course, CourseStatusFilter, TeacherCourse } from "@/features/courses/types/course.type";
 import { createCourseColumns } from "@/features/courses/components/course-columns";
 import { useCourses } from "@/features/courses/hooks/use-courses";
+import { useDeleteCourse } from "@/features/courses/hooks/use-delete-course";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +42,8 @@ const STATUS_BADGE_VARIANT: Record<
 
 export default function CoursePage() {
   const router = useRouter();
-  const { data: courses = [], isLoading, isError, refetch, isTeacher } = useCourses();
+  const { data: courses = [], isLoading, isError, isFetching, refetch, isTeacher } = useCourses();
+const deleteMutation = useDeleteCourse();
 
   const handleView = useCallback(
     (course: Course) => {
@@ -57,12 +59,14 @@ export default function CoursePage() {
     [router],
   );
 
-  const handleDelete = useCallback((course: Course) => {
-    if (window.confirm(`Are you sure you want to delete "${course.title}"?`)) {
-      // TODO: Call the delete API then invalidate the query cache.
-      alert(`Deleted course: ${course.title}`);
-    }
-  }, []);
+  const handleDelete = useCallback(
+    (course: Course) => {
+      if (window.confirm(`Bạn có chắc muốn xóa khóa học "${course.title}"?`)) {
+        deleteMutation.mutate(course.id);
+      }
+    },
+    [deleteMutation],
+  );
 
   const handleStudy = useCallback((course: Course) => {
     alert(`Going to study: ${course.title}`);
@@ -93,8 +97,10 @@ export default function CoursePage() {
     [isTeacher, handleView, handleEdit, handleDelete, handleStudy],
   );
 
-  // Loading state.
-  if (isLoading) {
+  // Loading state (also covers background retries of transient network errors —
+  // `isError` flips true immediately while retrying, so bind the loader to
+  // `isFetching` instead of flashing the error then replacing it with data).
+  if (isLoading || (isError && isFetching)) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

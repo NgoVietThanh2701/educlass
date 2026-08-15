@@ -83,6 +83,15 @@ async function bootstrap() {
       `,
   });
 
+  // Node closes keep-alive sockets after only 5 seconds by default, while the
+  // Next.js dev proxy holds upstream sockets in its pool much longer. When the
+  // proxy reuses a socket the backend already closed, the request dies with
+  // ECONNRESET ("socket hang up"). Raise the server timeouts so idle sockets
+  // survive between user actions. (headersTimeout must stay > keepAliveTimeout.)
+  const server = app.getHttpServer();
+  server.keepAliveTimeout = 65_000;
+  server.headersTimeout = 70_000;
+
   await app.listen(process.env.PORT ?? 5000);
 }
 bootstrap().catch((err) => {

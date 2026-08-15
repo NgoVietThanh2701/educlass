@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, type DragEvent } from "react";
+import { useEffect, useState, type DragEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -22,11 +23,13 @@ import { cn } from "@/lib/utils";
 import { getErrorMessage } from "@/lib/error-message";
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";
+import { COURSE_DETAIL_QUERY_KEY } from "@/features/courses/hooks/use-course-detail";
 import {
   createAssessment,
   deleteQuestion,
   getAssessmentDetail,
   reorderQuestions,
+  updateAssessment,
 } from "../api/assessment";
 import {
   type AssessmentInfoFormValues,
@@ -38,17 +41,30 @@ import QuestionEditor from "./question-editor";
 interface CreateAssessmentPageProps {
   courseId: string;
   sectionId: string;
+  /** Present when EDITING an existing assessment (pre-fills the info form + questions). */
+  assessmentId?: string;
 }
 
-/** Where the teacher builds an assessment: info + questions (with options) + DnD reorder. */
+/**
+ * Where the teacher builds an assessment: info + questions (with options) + DnD
+ * reorder. Works in two modes:
+ *  - CREATE (no `assessmentId`): an empty info form creates the assessment, then
+ *    questions can be added/reordered.
+ *  - EDIT (`assessmentId`): the existing assessment is loaded and BOTH the info
+ *    form (pre-filled, saved via PATCH) and the question editor are available.
+ */
 export default function CreateAssessmentPage({
   courseId,
   sectionId,
+  assessmentId,
 }: CreateAssessmentPageProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const isEdit = Boolean(assessmentId);
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
   const [questions, setQuestions] = useState<AssessmentQuestion[]>([]);
   const [creating, setCreating] = useState(false);
+  const [editLoading, setEditLoading] = useState(isEdit);
   const [editingQuestionId, setEditingQuestionId] = useState<
     string | "new" | null
   >(null);
@@ -78,20 +94,73 @@ export default function CreateAssessmentPage({
       ),
     );
 
-  const handleCreateAssessment = async (values: AssessmentInfoFormValues) => {
+  // EDIT mode: load the assessment once, pre-fill the info form and seed the
+  // question list from the server.
+  useEffect(() => {
+    if (!assessmentId) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const detail = await getAssessmentDetail(assessmentId);
+        if (cancelled) return;
+
+        setAssessment(detail);
+        setQuestions(
+          [...(detail.questions ?? [])].sort((a, b) => a.order - b.order),
+        );
+        form.reset({
+          title: detail.title,
+          description: detail.description ?? "",
+          duration: detail.duration,
+          shuffleQuestions: detail.shuffleQuestions,
+          shuffleOptions: detail.shuffleOptions,
+        });
+      } catch (err) {
+        if (!cancelled) toast.error(getErrorMessage(err));
+      } finally {
+        if (!cancelled) setEditLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [assessmentId, form]);
+
+  const handleSaveInfo = async (values: AssessmentInfoFormValues) => {
     setCreating(true);
     try {
-      const created = await createAssessment({
+      const payload = {
         title: values.title,
         description: values.description || undefined,
         duration: values.duration,
         shuffleQuestions: values.shuffleQuestions,
         shuffleOptions: values.shuffleOptions,
-        sectionId,
+      };
+
+      if (assessment) {
+        await updateAssessment(assessment.id, payload);
+        await refresh();
+        toast.success("Đã cập nhật đề kiểm tra.");
+      } else {
+        const created = await createAssessment({
+          ...payload,
+          sectionId,
+        });
+        setAssessment(created);
+        setQuestions(
+          [...(created.questions ?? [])].sort((a, b) => a.order - b.order),
+        );
+        toast.success("Đã tạo đề kiểm tra.");
+      }
+
+      // The course-edit page shows assessments inside the section tree after
+      // navigating back — keep its cache in sync.
+      queryClient.invalidateQueries({
+        queryKey: [...COURSE_DETAIL_QUERY_KEY, courseId],
       });
-      setAssessment(created);
-      setQuestions([...(created.questions ?? [])].sort((a, b) => a.order - b.order));
-      toast.success("Đã tạo đề kiểm tra.");
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -176,6 +245,14 @@ export default function CreateAssessmentPage({
     setOverId(null);
   };
 
+  if (editLoading) {
+    return (
+      <div className="flex min-h-64 items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6">
       <div>
@@ -189,11 +266,124 @@ export default function CreateAssessmentPage({
           <ArrowLeft className="h-4 w-4" />
           Quay lại chỉnh sửa khóa học
         </Button>
-        <h1 className="text-xl font-semibold">Tạo đề kiểm tra</h1>
+        <h1 className="text-xl font-semibold">
+          {isEdit ? "Chỉnh sửa đề kiểm tra" : "Tạo đề kiểm tra"}
+        </h1>
       </div>
 
       {assessment ? (
         <>
+          {/* EDIT mode: info form stays visible so metadata can be changed
+              anytime; CREATE mode switches from the empty form to questions. */}
+          {isEdit && (
+            <form
+              onSubmit={form.handleSubmit(handleSaveInfo)}
+              className="space-y-4 rounded-lg border border-border p-5"
+            >
+              <FormField
+                htmlFor="a-title"
+                label="Tiêu đề"
+                required
+                error={form.formState.errors.title?.message}
+              >
+                <Input
+                  id="a-title"
+                  placeholder="Ví dụ: Đề kiểm tra giữa kỳ"
+                  maxLength={255}
+                  disabled={creating}
+                  {...form.register("title")}
+                />
+              </FormField>
+
+              <FormField
+                htmlFor="a-description"
+                label="Mô tả (tùy chọn)"
+                error={form.formState.errors.description?.message}
+              >
+                <Textarea
+                  id="a-description"
+                  rows={3}
+                  maxLength={2000}
+                  placeholder="Mô tả đề kiểm tra..."
+                  disabled={creating}
+                  {...form.register("description")}
+                />
+              </FormField>
+
+              <FormField
+                htmlFor="a-duration"
+                label="Thời gian làm bài (phút)"
+                required
+                error={form.formState.errors.duration?.message}
+              >
+                <Input
+                  id="a-duration"
+                  type="number"
+                  min={1}
+                  step={1}
+                  disabled={creating}
+                  {...form.register("duration", { valueAsNumber: true })}
+                />
+              </FormField>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <FormField
+                  htmlFor="a-shuffle-questions"
+                  label="Xáo trộn câu hỏi"
+                  className="flex items-center gap-2"
+                >
+                  <Checkbox
+                    id="a-shuffle-questions"
+                    disabled={creating}
+                    checked={form.watch("shuffleQuestions")}
+                    onChange={(e) =>
+                      form.setValue("shuffleQuestions", e.target.checked, {
+                        shouldValidate: true,
+                      })
+                    }
+                  />
+                </FormField>
+                <FormField
+                  htmlFor="a-shuffle-options"
+                  label="Xáo trộn lựa chọn"
+                  className="flex items-center gap-2"
+                >
+                  <Checkbox
+                    id="a-shuffle-options"
+                    disabled={creating}
+                    checked={form.watch("shuffleOptions")}
+                    onChange={(e) =>
+                      form.setValue("shuffleOptions", e.target.checked, {
+                        shouldValidate: true,
+                      })
+                    }
+                  />
+                </FormField>
+              </div>
+
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={goBack}
+                  disabled={creating}
+                >
+                  Hủy
+                </Button>
+                <Button type="submit" disabled={creating}>
+                  {creating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Đang lưu...
+                    </>
+                  ) : (
+                    "Lưu thay đổi"
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
+
           {/* Assessment summary */}
           <div className="rounded-lg border border-border p-4">
             <div className="flex flex-wrap items-center gap-2">
@@ -346,7 +536,7 @@ export default function CreateAssessmentPage({
         </>
       ) : (
         <form
-          onSubmit={form.handleSubmit(handleCreateAssessment)}
+          onSubmit={form.handleSubmit(handleSaveInfo)}
           className="space-y-4 rounded-lg border border-border p-5"
         >
           <FormField

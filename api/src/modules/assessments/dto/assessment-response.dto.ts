@@ -28,3 +28,18 @@ export class OptionResponseDto {
   isCorrect: boolean;
   order: number;
 }
+
+/** Lightweight assessment row embedded in the teacher course-detail tree (no questions). */
+export class AssessmentTeacherItemDto {
+  id: string;
+  title: string;
+  description: string | null;
+  order: number;
+  duration: number;
+  status: string;
+  shuffleQuestions: boolean;
+  shuffleOptions: boolean;
+  questionCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}

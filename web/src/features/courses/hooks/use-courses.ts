@@ -16,7 +16,6 @@ export function useTeacherCourses() {
   return useQuery({
     queryKey: COURSE_QUERY_KEYS.teacher,
     queryFn: getTeacherCourses,
-    retry: false,
   });
 }
 
@@ -25,7 +24,6 @@ export function useStudentCourses() {
   return useQuery({
     queryKey: COURSE_QUERY_KEYS.student,
     queryFn: getStudentCourses,
-    retry: false,
   });
 }
 
@@ -42,7 +40,6 @@ export function useCourses() {
     queryKey: isTeacher ? COURSE_QUERY_KEYS.teacher : COURSE_QUERY_KEYS.student,
     queryFn: isTeacher ? getTeacherCourses : getStudentCourses,
     enabled: role != null,
-    retry: false,
   });
 
   return {

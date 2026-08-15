@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -13,12 +15,12 @@ import "./dashboard.css";
 /**
  * Protected-route gate.
  *
- * The root `AuthProvider` runs `useMe` asynchronously to restore the session
- * (which may itself trigger the refresh-token interceptor to obtain an access
- * token). Until that finishes `isInitializing` is `true`: the access token may
- * be missing/stale, so we deliberately withhold the shell AND its children —
- * this prevents page-level `useQuery` calls from firing prematurely (which
- * would 401, refresh, and repaint after a flash of empty content) and keeps the
+ * The root `AuthProvider` restores the session via a single `/auth/refresh`
+ * round-trip (it returns both a fresh access token and the user profile).
+ * Until that finishes `isInitializing` is `true`: the access token may still be
+ * missing, so we deliberately withhold the shell AND its children — this
+ * prevents page-level `useQuery` calls from firing prematurely (which would
+ * 401, refresh, and repaint after a flash of empty content) and keeps the
  * authenticated UI hidden until we actually know the session state.
  */
 export default function DashboardLayout({ children }: { children: ReactNode }) {

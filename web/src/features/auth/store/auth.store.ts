@@ -1,4 +1,4 @@
-import { User } from "@/types/user.type";
+import type { User } from "@/types/user.type";
 import { create } from "zustand";
 
 interface AuthState {
@@ -10,6 +10,8 @@ interface AuthState {
 
   setUser(user: User | null): void;
   setAccessToken(accessToken: string | null): void;
+  /** Set both profile + token in one snapshot (login / verify / refresh). */
+  setAuth(auth: { user: User | null; accessToken: string | null }): void;
 
   logout(): void;
   finishInitialize(): void;
@@ -31,6 +33,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   setAccessToken: (accessToken) =>
     set({
       accessToken,
+    }),
+
+  setAuth: ({ user, accessToken }) =>
+    set({
+      user,
+      accessToken,
+      isAuthenticated: !!user,
     }),
 
   logout: () =>

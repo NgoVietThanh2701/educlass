@@ -9,20 +9,12 @@ import {
   useResendOtp,
   useVerifyOtp,
 } from "@/features/auth/hooks/use-verify-otp";
+import { getErrorMessage } from "@/lib/error-message";
 
 const OTP_LENGTH = 6;
 
 interface OtpFormProps {
   email?: string;
-}
-
-function getErrorMessage(error: unknown): string {
-  const apiError = error as {
-    response?: { data?: { message?: string } };
-  };
-  return (
-    apiError?.response?.data?.message ?? "Đã có lỗi xảy ra. Vui lòng thử lại."
-  );
 }
 
 export default function OtpForm({ email }: OtpFormProps) {

@@ -39,6 +39,12 @@ export interface CreateAssessmentRequest {
   sectionId: string;
 }
 
+/** Payload for PATCH /assessments/:id — everything except `sectionId` (section is fixed at creation). */
+export type UpdateAssessmentRequest = Omit<
+  CreateAssessmentRequest,
+  "sectionId"
+>;
+
 export interface OptionInput {
   /** Present for options that already exist (update) — omit for new ones. */
   id?: string;

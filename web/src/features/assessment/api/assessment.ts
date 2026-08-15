@@ -1,10 +1,11 @@
 import { axiosInstance } from "@/lib/axios";
 import { API_ENDPOINT } from "@/constants/api";
-import { ApiResponse } from "@/types/api";
+import type { ApiResponse } from "@/types/api";
 import type {
   AssessmentDetail,
   AssessmentQuestion,
   CreateAssessmentRequest,
+  UpdateAssessmentRequest,
   OptionInput,
   QuestionInput,
 } from "../types/assessment.type";
@@ -28,6 +29,25 @@ export async function getAssessmentDetail(
 ): Promise<AssessmentDetail> {
   const response = await axiosInstance.get<ApiResponse<AssessmentDetail>>(
     `${ASSESSMENTS}/${assessmentId}`,
+  );
+  return response.data.data;
+}
+
+/**
+ * Update an assessment's metadata (title, description, duration, shuffle flags).
+ *
+ * NOTE: the backend PATCH returns the *list-item* DTO (no nested `questions`).
+ * Callers that need the full detail should re-fetch via `getAssessmentDetail`.
+ *
+ * Backend: PATCH /assessments/:assessmentId
+ */
+export async function updateAssessment(
+  assessmentId: string,
+  data: UpdateAssessmentRequest,
+): Promise<AssessmentDetail> {
+  const response = await axiosInstance.patch<ApiResponse<AssessmentDetail>>(
+    `${ASSESSMENTS}/${assessmentId}`,
+    data,
   );
   return response.data.data;
 }

@@ -1,6 +1,6 @@
 import { axiosInstance } from "@/lib/axios";
 import { API_ENDPOINT } from "@/constants/api";
-import { ApiResponse } from "@/types/api";
+import type { ApiResponse } from "@/types/api";
 import type { CreateCoursePayload } from "../types/create-course.type";
 import type { TeacherCourseDetail } from "../types/course.type";
 

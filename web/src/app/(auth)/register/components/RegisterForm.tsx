@@ -11,11 +11,11 @@ import { Select } from "@/components/ui/select";
 import { ROUTES } from "@/constants/routes";
 import { useRegister } from "@/features/auth/hooks/use-register";
 import {
-  RegisterFormValues,
   registerSchema,
+  type RegisterFormValues,
 } from "@/features/auth/schemas/register.schema";
 import { RoleUser } from "@/types/role.type";
-import { RegisterRequest } from "@/features/auth/types/register-request.type";
+import type { RegisterRequest } from "@/features/auth/types/register-request.type";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";

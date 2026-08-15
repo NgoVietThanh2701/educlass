@@ -62,7 +62,7 @@ function splitLines(value?: string | null): string[] {
 export default function CourseDetail({ courseId }: { courseId: string }) {
   const router = useRouter();
   const role = useAuthStore((state) => state.user?.role);
-  const { data: course, isLoading, isError, refetch } =
+  const { data: course, isLoading, isError, isFetching, refetch } =
     useTeacherCourseDetail(courseId);
 
   if (role === null) {
@@ -88,7 +88,10 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
     );
   }
 
-  if (isLoading) {
+  // During a background retry of a transient network error, `isError` is already
+  // true while `isFetching` stays truthy — keep the loader up so we don't flash
+  // the error card and then overwrite it with data a moment later.
+  if (isLoading || (isError && isFetching)) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

@@ -38,23 +38,6 @@ export interface CourseDetailLesson {
   updatedAt: Date | string;
 }
 
-export interface CourseDetailQuestionOption {
-  id: string;
-  content: string;
-  isCorrect: boolean;
-  order: number;
-}
-
-export interface CourseDetailQuestion {
-  id: string;
-  content: string;
-  explanation: string | null;
-  score: number;
-  order: number;
-  type: string;
-  options?: CourseDetailQuestionOption[];
-}
-
 export interface CourseDetailAssessment {
   id: string;
   title: string;
@@ -66,7 +49,6 @@ export interface CourseDetailAssessment {
   questionCount: number;
   createdAt: Date | string;
   updatedAt: Date | string;
-  questions: CourseDetailQuestion[];
 }
 
 export interface CourseDetailSection {

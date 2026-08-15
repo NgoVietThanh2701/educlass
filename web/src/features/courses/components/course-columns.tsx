@@ -17,7 +17,12 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Eye, Edit, Trash2, BookOpen } from "lucide-react";
-import { Course, CourseStatus, CourseLevel, TeacherCourse } from "../types/course.type";
+import type {
+  Course,
+  CourseStatus,
+  CourseLevel,
+  TeacherCourse,
+} from "../types/course.type";
 import { LEVEL_LABELS, STATUS_CONFIG } from "../constants/course";
 import { formatDate, formatPrice } from "../utils/format";
 

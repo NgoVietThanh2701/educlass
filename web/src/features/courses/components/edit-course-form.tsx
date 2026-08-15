@@ -21,9 +21,9 @@ import { useChangeCourseStatus } from "../hooks/use-change-course-status";
 import { useReorderSections } from "../hooks/use-reorder-sections";
 import { useReorderLessons } from "../hooks/use-reorder-lessons";
 import {
-  CreateCourseFormValues,
   createCourseSchema,
   LEVEL_OPTIONS,
+  type CreateCourseFormValues,
 } from "../schemas/create-course.schema";
 import {
   LANGUAGES,
@@ -36,6 +36,7 @@ import { CourseSections } from "./course-sections";
 import CreateSectionModal from "./modals/create-section-modal";
 import CreateLessonModal from "./modals/create-lesson-modal";
 import DeleteSectionModal from "./modals/delete-section-modal";
+import EditSectionModal from "./modals/edit-section-modal";
 
 const STATUS_OPTIONS: { value: CourseStatus; label: string }[] = [
   { value: "DRAFT", label: "Bản nháp" },
@@ -60,6 +61,9 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
   >(null);
   const [sections, setSections] = useState<CourseDetailSection[]>([]);
   const [deleteSectionTarget, setDeleteSectionTarget] = useState<
+    CourseDetailSection | null
+  >(null);
+  const [editSectionTarget, setEditSectionTarget] = useState<
     CourseDetailSection | null
   >(null);
 
@@ -499,12 +503,23 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
             const target = sections.find((section) => section.id === sectionId);
             if (target) setDeleteSectionTarget(target);
           }}
+          onEditSection={(sectionId) => {
+            const target = sections.find((section) => section.id === sectionId);
+            if (target) setEditSectionTarget(target);
+          }}
           onAddAssessment={(sectionId) =>
             router.push(
               ROUTES.COURSE_ASSESSMENT_CREATE.replace(":courseId", courseId).replace(
                 ":sectionId",
                 sectionId,
               ),
+            )
+          }
+          onEditAssessment={(sectionId, assessmentId) =>
+            router.push(
+              ROUTES.COURSE_ASSESSMENT_EDIT.replace(":courseId", courseId)
+                .replace(":sectionId", sectionId)
+                .replace(":assessmentId", assessmentId),
             )
           }
         />
@@ -530,6 +545,18 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
           open={!!deleteSectionTarget}
           onOpenChange={(open) => {
             if (!open) setDeleteSectionTarget(null);
+          }}
+        />
+      )}
+
+      {editSectionTarget && (
+        <EditSectionModal
+          key={`edit-section-${editSectionTarget.id}`}
+          courseId={courseId}
+          section={editSectionTarget}
+          open={!!editSectionTarget}
+          onOpenChange={(open) => {
+            if (!open) setEditSectionTarget(null);
           }}
         />
       )}

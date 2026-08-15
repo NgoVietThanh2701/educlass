@@ -8,10 +8,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import {
-  LoginFormValues,
-  loginSchema,
-} from "@/features/auth/schemas/login.schema";
+import { loginSchema, type LoginFormValues } from "@/features/auth/schemas/login.schema";
 import { FormInput } from "@/components/forms/form-input";
 import { FormPassword } from "@/components/forms/form-password";
 import { getErrorMessage } from "@/lib/error-message";
@@ -30,9 +27,7 @@ export default function LoginForm() {
 
   const onSubmit = (values: LoginFormValues) => {
     loginMutation.mutate(values, {
-      onSuccess: (response) => {
-        console.log(response.message);
-
+      onSuccess: () => {
         toast.success("Đăng nhập thành công!");
 
         router.push(ROUTES.HOME);

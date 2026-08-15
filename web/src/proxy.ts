@@ -39,6 +39,8 @@ function isAuthPath(pathname: string): boolean {
   return pathname === "/login" || pathname === "/register";
 }
 
-// export const config = {
-//   matcher: ["/dashboard/:path*", "/login", "/register"],
-// };
+export const config = {
+  // Run the guard only where it can actually redirect. Loading it for every
+  // request (default) would execute it on static assets & API rewrites too.
+  matcher: ["/dashboard/:path*", "/login", "/register"],
+};

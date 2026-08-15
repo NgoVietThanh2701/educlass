@@ -1,7 +1,7 @@
 import { axiosInstance } from "@/lib/axios";
 import { API_ENDPOINT } from "@/constants/api";
-import { ApiResponse } from "@/types/api";
-import { Course, TeacherCourse } from "../types/course.type";
+import type { ApiResponse } from "@/types/api";
+import type { Course, TeacherCourse } from "../types/course.type";
 
 /**
  * Fetch the list of courses created by the current TEACHER.

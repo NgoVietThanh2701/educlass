@@ -17,9 +17,9 @@ import { useAuthStore } from "@/features/auth/store/auth.store";
 import { RoleUser } from "@/types/role.type";
 import { useCreateCourse } from "../hooks/use-create-course";
 import {
-  CreateCourseFormValues,
   createCourseSchema,
   LEVEL_OPTIONS,
+  type CreateCourseFormValues,
 } from "../schemas/create-course.schema";
 import { LANGUAGES } from "../types/create-course.type";
 

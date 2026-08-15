@@ -1,20 +1,22 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { resendOtp, verifyOtp } from "../api/verify-otp";
 import { useAuthStore } from "../store/auth.store";
 import { setSessionMarker } from "@/lib/cookie";
 
 export function useVerifyOtp() {
-  const setAccessToken = useAuthStore((state) => state.setAccessToken);
-  const setUser = useAuthStore((state) => state.setUser);
+  const queryClient = useQueryClient();
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   return useMutation({
     mutationFn: verifyOtp,
 
-    onSuccess: (response) => {
+    onSuccess: (data) => {
       setSessionMarker();
-      setAccessToken(response.data.accessToken);
-      setUser(response.data.user);
+      setAuth({ user: data.user, accessToken: data.accessToken });
+
+      // OTP verify logs the user in → auth boundary, drop stale cached data.
+      queryClient.removeQueries();
     },
   });
 }

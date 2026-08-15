@@ -1,6 +1,7 @@
 import logout from "@/features/auth/api/logout";
 import { refreshAccessToken } from "@/features/auth/api/refresh";
 import { useAuthStore } from "@/features/auth/store/auth.store";
+import { queryClient } from "@/lib/query-client";
 import { hasSessionMarker, clearSessionMarker } from "@/lib/cookie";
 import type {
   AxiosError,
@@ -105,9 +106,15 @@ export function setupResponseInterceptor(api: AxiosInstance) {
       isRefreshing = true;
 
       try {
-        const newAccessToken = await refreshAccessToken();
+        // `/auth/refresh` returns a fresh access token AND the current profile,
+        // so a 401-triggered refresh also keeps the in-memory user fresh.
+        const { accessToken: newAccessToken, user: refreshedUser } =
+          await refreshAccessToken();
 
-        useAuthStore.getState().setAccessToken(newAccessToken);
+        useAuthStore.getState().setAuth({
+          user: refreshedUser,
+          accessToken: newAccessToken,
+        });
 
         processQueue(null, newAccessToken);
 
@@ -128,6 +135,9 @@ export function setupResponseInterceptor(api: AxiosInstance) {
 
         useAuthStore.getState().logout();
         clearSessionMarker();
+        // Auth boundary — no session anymore: drop cached queries so no
+        // stale user-bound data survives (dashboard gate redirects to login).
+        queryClient.removeQueries();
 
         return Promise.reject(refreshError);
       } finally {

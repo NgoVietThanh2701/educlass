@@ -1,4 +1,4 @@
-import { HTMLMotionProps, Transition } from "framer-motion";
+import type { HTMLMotionProps, Transition } from "framer-motion";
 
 export const motionTransition: Transition = {
   duration: 0.2,

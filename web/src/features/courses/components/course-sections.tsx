@@ -9,6 +9,7 @@ import {
   FileText,
   GripVertical,
   Loader2,
+  Pencil,
   PlayCircle,
   Plus,
   Trash2,
@@ -41,6 +42,10 @@ interface CourseSectionsProps {
   onMoveLesson?: (sectionId: string, fromId: string, toId: string) => void;
   /** Fired when the teacher triggers deleting a section. */
   onDeleteSection?: (sectionId: string) => void;
+  /** Fired when the teacher wants to edit a section's metadata. */
+  onEditSection?: (sectionId: string) => void;
+  /** Fired when the teacher wants to edit an assessment (opens its edit page). */
+  onEditAssessment?: (sectionId: string, assessmentId: string) => void;
   /** Fired when the teacher wants to create an assessment inside a section. */
   onAddAssessment?: (sectionId: string) => void;
   /** Disables drag re-order + action buttons while a reorder is being saved. */
@@ -55,6 +60,8 @@ export function CourseSections({
   onMoveSection,
   onMoveLesson,
   onDeleteSection,
+  onEditSection,
+  onEditAssessment,
   onAddAssessment,
   busy = false,
 }: CourseSectionsProps) {
@@ -237,6 +244,22 @@ export function CourseSections({
                   <span className="hidden sm:inline">Bài học</span>
                 </Button>
               )}
+              {onEditSection && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 gap-1"
+                  disabled={busy}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditSection(section.id);
+                  }}
+                >
+                  <Pencil className="h-3 w-3" />
+                  <span className="hidden sm:inline">Sửa</span>
+                </Button>
+              )}
               {onDeleteSection && (
                 <Button
                   type="button"
@@ -317,6 +340,19 @@ export function CourseSections({
                     <span className="shrink-0 text-xs text-muted-foreground">
                       {ASSESSMENT_STATUS_LABELS[assessment.status]}
                     </span>
+                    {onEditAssessment && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        title="Chỉnh sửa đề kiểm tra"
+                        disabled={busy}
+                        onClick={() => onEditAssessment(section.id, assessment.id)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                        <span className="hidden sm:inline">Sửa</span>
+                      </Button>
+                    )}
                   </div>
                 ))}
 

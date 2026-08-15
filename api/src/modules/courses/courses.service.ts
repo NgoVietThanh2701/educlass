@@ -6,12 +6,12 @@ import {
 import { buildCourseProgressPayload } from '@common/utils/course-progress.util';
 import { AppException } from '@common/exceptions/app.exception';
 import { CourseAccessService } from '@common/services/course-access.service';
-import { assessmentDetailSelect } from '@modules/assessments/mapper/assessment-detail.mapper';
 import {
+  assessmentTeacherTreeSelect,
   assessmentTreeSelect,
+  toAssessmentTeacherTreeItem,
   toAssessmentTreeItem,
 } from '@modules/assessments/mapper/assessment.mapper';
-import { toAssessmentDetailResponse } from '@modules/assessments/mapper/assessment-detail.mapper';
 import {
   lessonListSelect,
   lessonSelect,
@@ -150,7 +150,9 @@ export class CoursesService {
             },
             assessments: {
               orderBy: { order: 'asc' },
-              select: assessmentDetailSelect,
+              // Lightweight outline — no questions/options here (see
+              // assessmentTeacherTreeSelect), keeps this endpoint fast.
+              select: assessmentTeacherTreeSelect,
             },
           },
         },
@@ -166,7 +168,7 @@ export class CoursesService {
       sections: sections.map((section) => ({
         ...toSectionResponse(section),
         lessons: section.lessons.map(toLessonResponse),
-        assessments: section.assessments.map(toAssessmentDetailResponse),
+        assessments: section.assessments.map(toAssessmentTeacherTreeItem),
       })),
     };
   }
