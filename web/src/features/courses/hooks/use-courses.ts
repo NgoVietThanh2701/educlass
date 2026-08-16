@@ -2,14 +2,33 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import { RoleUser } from "@/types/role.type";
-import { getTeacherCourses, getStudentCourses } from "../api/courses";
+import {
+  getTeacherCourses,
+  getStudentCourses,
+  getPublicCourses,
+} from "../api/courses";
 import type { Course, TeacherCourse } from "../types/course.type";
 
 export const COURSE_QUERY_KEYS = {
   all: ["courses"] as const,
   teacher: ["courses", "teacher"] as const,
   student: ["courses", "student"] as const,
+  public: ["courses", "public"] as const,
 };
+
+/** Published courses for the public homepage — no auth required. */
+export function usePublicCourses(
+  params: { page?: number; limit?: number } = {},
+) {
+  return useQuery({
+    queryKey: [
+      ...COURSE_QUERY_KEYS.public,
+      params.page ?? 1,
+      params.limit ?? 10,
+    ],
+    queryFn: () => getPublicCourses(params),
+  });
+}
 
 /** All courses created by the current teacher (includes teacher-only `status`). */
 export function useTeacherCourses() {

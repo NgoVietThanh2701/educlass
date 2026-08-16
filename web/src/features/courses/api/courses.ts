@@ -26,3 +26,32 @@ export async function getStudentCourses(): Promise<Course[]> {
 
   return response.data.data;
 }
+
+/**
+ * Fetch published courses for public discovery (homepage "featured courses").
+ * Backend: GET /api/v1/public/courses?page=1&limit=6 → `{ data, meta }`. Always
+ * available (no auth); each item is enriched with `teacherName` + `students`.
+ */
+export interface CourseListMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+/** Paginated response for the public course catalog. */
+export interface PaginatedCourses {
+  data: Course[];
+  meta: CourseListMeta;
+}
+
+export async function getPublicCourses(
+  params: { page?: number; limit?: number } = {},
+): Promise<PaginatedCourses> {
+  const response = await axiosInstance.get<ApiResponse<PaginatedCourses>>(
+    API_ENDPOINT.PUBLIC_COURSES,
+    { params },
+  );
+
+  return response.data.data;
+}

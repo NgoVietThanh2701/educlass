@@ -1,14 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { EmblaCarouselType } from "embla-carousel";
-import EmblaCarousel from "embla-carousel";
+import { useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
+import { useEmblaCarousel } from "@/hooks/use-embla-carousel";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { cn } from "@/lib/utils";
 
@@ -37,35 +36,21 @@ const slides: Slide[] = [
 const AUTOPLAY_MS = 6000;
 
 export default function HeroCarousel() {
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const [embla, setEmbla] = useState<EmblaCarouselType | null>(null);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [canScrollPrev, setCanScrollPrev] = useState(false);
-  const [canScrollNext, setCanScrollNext] = useState(false);
   const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prefersReducedMotion = useReducedMotion();
 
-  useEffect(() => {
-    if (!viewportRef.current) return;
-
-    const instance = EmblaCarousel(viewportRef.current, {
-      loop: true,
-      skipSnaps: true,
-      align: "start",
-    });
-    setEmbla(instance);
-
-    const onSelect = () => {
-      setSelectedIndex(instance.selectedScrollSnap());
-      setCanScrollPrev(instance.canScrollPrev());
-      setCanScrollNext(instance.canScrollNext());
-    };
-    instance.on("select", onSelect);
-    instance.on("reInit", onSelect);
-    onSelect();
-
-    return () => instance.destroy();
-  }, []);
+  const {
+    viewportRef,
+    embla,
+    selectedIndex,
+    canScrollPrev,
+    canScrollNext,
+    scrollPrev,
+    scrollNext,
+    scrollTo,
+  } = useEmblaCarousel({
+    options: { loop: true, skipSnaps: true, align: "start" },
+  });
 
   const startAutoplay = useCallback(() => {
     if (!embla || prefersReducedMotion) return;
@@ -105,17 +90,13 @@ export default function HeroCarousel() {
       viewport?.removeEventListener("focusin", onEnter);
       viewport?.removeEventListener("focusout", onLeave);
     };
-  }, [startAutoplay, stopAutoplay, prefersReducedMotion]);
-
-  const scrollPrev = () => embla?.scrollPrev();
-  const scrollNext = () => embla?.scrollNext();
-  const scrollTo = (index: number) => embla?.scrollTo(index);
+  }, [startAutoplay, stopAutoplay, prefersReducedMotion, viewportRef]);
 
   return (
     <section className="w-full">
       <div
         ref={viewportRef}
-        className="embla relative h-[26.5rem] sm:h-[30.5rem] md:h-[34.5rem] lg:h-[38.5rem] w-full select-none overflow-hidden rounded-xl sm:rounded-2xl"
+        className="embla relative aspect-[3/2] sm:aspect-[190/100] w-full select-none overflow-hidden rounded-xl sm:rounded-2xl"
       >
         <div className="embla__container flex h-full">
           {slides.map((slide, index) => (
@@ -136,7 +117,7 @@ export default function HeroCarousel() {
                 href={slide.ctaHref}
                 className={cn(
                   buttonVariants({ variant: "default", size: "lg" }),
-                  "font-semibold absolute bottom-8 left-4 z-10 sm:bottom-10 sm:left-8 md:bottom-12 md:left-10",
+                  "font-semibold absolute bottom-6 left-3 z-10 h-9 px-5 text-sm sm:bottom-10 sm:left-8 sm:h-10 sm:px-8 md:bottom-12 md:left-10",
                 )}
               >
                 {slide.ctaLabel}

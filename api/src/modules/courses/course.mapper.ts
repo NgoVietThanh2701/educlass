@@ -6,7 +6,11 @@ import {
 } from '@modules/assessments/mapper/assessment.mapper';
 import { lessonPublicOutlineSelect, toLessonPublicOutline } from '@modules/lessons/lesson.mapper';
 import { sectionOutlineSelect, toSectionOutline } from '@modules/sections/section.mapper';
-import { CourseListItemDto, CourseTeacherListItemDto } from './dto/course-list-item.dto';
+import {
+  CourseListItemDto,
+  CoursePublicListItemDto,
+  CourseTeacherListItemDto,
+} from './dto/course-list-item.dto';
 import { CoursePublicDetailDto } from './dto/course-public-detail.dto';
 import { CourseResponseDto } from './dto/course-response.dto';
 
@@ -24,6 +28,16 @@ export const courseListSelect = Prisma.validator<Prisma.CourseSelect>()({
   estimatedDuration: true,
   createdAt: true,
   updatedAt: true,
+});
+
+/**
+ * Public (published) course card — adds the teacher display name and the number
+ * of enrolled students so the public "featured courses" grid can show them.
+ */
+export const coursePublicListSelect = Prisma.validator<Prisma.CourseSelect>()({
+  ...courseListSelect,
+  teacher: { select: { fullName: true } },
+  _count: { select: { enrollments: true } },
 });
 
 export const courseTeacherListSelect = Prisma.validator<Prisma.CourseSelect>()({
@@ -119,6 +133,20 @@ export function toCourseListItem(course: CourseListMapperInput): CourseListItemD
     estimatedDuration: course.estimatedDuration,
     createdAt: course.createdAt,
     updatedAt: course.updatedAt,
+  };
+}
+
+type CoursePublicListMapperInput = Prisma.CourseGetPayload<{
+  select: typeof coursePublicListSelect;
+}>;
+
+export function toCoursePublicListItem(
+  course: CoursePublicListMapperInput,
+): CoursePublicListItemDto {
+  return {
+    ...toCourseListItem(course),
+    teacherName: course.teacher.fullName,
+    students: course._count.enrollments,
   };
 }
 

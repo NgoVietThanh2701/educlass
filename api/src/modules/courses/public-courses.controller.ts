@@ -1,8 +1,9 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SuccessMessage } from '@common/decorators/message.decorator';
-import { CourseListItemDto } from './dto/course-list-item.dto';
 import { CoursePublicDetailDto } from './dto/course-public-detail.dto';
+import { GetPublicCoursesQueryDto } from './dto/get-public-courses-query.dto';
+import { PaginatedCoursesDto } from './dto/course-paginated.dto';
 import { CoursesService } from './courses.service';
 
 @ApiTags('Public Courses')
@@ -12,10 +13,10 @@ export class PublicCoursesController {
 
   @Get()
   @SuccessMessage('Retrieved published courses successfully')
-  @ApiOperation({ summary: 'Get all published courses for public discovery' })
-  @ApiResponse({ status: 200, type: CourseListItemDto, isArray: true })
-  findAllPublished() {
-    return this.coursesService.findAllPublished();
+  @ApiOperation({ summary: 'Get published courses for public discovery (paginated)' })
+  @ApiResponse({ status: 200, type: PaginatedCoursesDto })
+  findAllPublished(@Query() query: GetPublicCoursesQueryDto) {
+    return this.coursesService.findAllPublished(query);
   }
 
   @Get(':slug')

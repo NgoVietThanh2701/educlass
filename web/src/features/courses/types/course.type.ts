@@ -22,6 +22,9 @@ export interface Course {
   slug: string;
   shortDescription?: string | null;
   thumbnailUrl?: string | null;
+  /** Public catalog fields (enriched by GET /public/courses). */
+  teacherName?: string | null;
+  students?: number;
   level: CourseLevel;
   language: string;
   price: number;

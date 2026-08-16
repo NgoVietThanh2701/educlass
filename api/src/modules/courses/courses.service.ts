@@ -30,17 +30,21 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import {
   courseListSelect,
   coursePublicDetailSelect,
+  coursePublicListSelect,
   courseSelect,
   courseStudentSelect,
   courseTeacherListSelect,
   toCourseListItem,
   toCoursePublicDetail,
+  toCoursePublicListItem,
   toCourseResponse,
   toCourseTeacherListItem,
 } from './course.mapper';
 import { CourseTeacherDetailDto } from './dto/course-teacher-detail.dto';
 import { CourseStudentDetailDto } from './dto/course-student-detail.dto';
 import { CourseListItemDto } from './dto/course-list-item.dto';
+import { CoursePublicListItemDto } from './dto/course-list-item.dto';
+import { GetPublicCoursesQueryDto } from './dto/get-public-courses-query.dto';
 import { CourseTeacherListItemDto } from './dto/course-list-item.dto';
 import { CoursePublicDetailDto } from './dto/course-public-detail.dto';
 import { CourseResponseDto } from './dto/course-response.dto';
@@ -102,14 +106,29 @@ export class CoursesService {
     throw new Error(`Unable to generate a unique slug for course "${dto.title}"`);
   }
 
-  async findAllPublished(): Promise<CourseListItemDto[]> {
-    const courses = await this.prisma.course.findMany({
-      where: { status: CourseStatus.PUBLISHED },
-      orderBy: { publishedAt: 'desc' },
-      select: courseListSelect,
-    });
+  async findAllPublished(query: GetPublicCoursesQueryDto): Promise<{
+    data: CoursePublicListItemDto[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+  }> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const where = { status: CourseStatus.PUBLISHED };
 
-    return courses.map(toCourseListItem);
+    const [total, courses] = await Promise.all([
+      this.prisma.course.count({ where }),
+      this.prisma.course.findMany({
+        where,
+        orderBy: { publishedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: coursePublicListSelect,
+      }),
+    ]);
+
+    return {
+      data: courses.map(toCoursePublicListItem),
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async findOnePublishedBySlug(slug: string): Promise<CoursePublicDetailDto> {

@@ -6,6 +6,8 @@ export const ROUTES = {
   LOGIN: "/login",
   REGISTER: "/register",
   REGISTER_VERIFY: "/register/verify",
+  /** Public course catalog page (all courses) — to be developed. */
+  COURSE_LIST: "/courses",
 
   // Dashboard routes
   DASHBOARD: DASHBOARD,
@@ -16,7 +18,8 @@ export const ROUTES = {
   COURSE_ASSESSMENT_CREATE:
     DASHBOARD + "/course/:courseId/section/:sectionId/assessment/new",
   COURSE_ASSESSMENT_EDIT:
-    DASHBOARD + "/course/:courseId/section/:sectionId/assessment/:assessmentId/edit",
+    DASHBOARD +
+    "/course/:courseId/section/:sectionId/assessment/:assessmentId/edit",
   ASSESSMENT: DASHBOARD + "/assessment",
   ASSESSMENT_CREATE: DASHBOARD + "/assessment/new",
   ASSESSMENT_DETAIL: DASHBOARD + "/assessment/:id",

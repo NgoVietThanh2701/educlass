@@ -49,3 +49,15 @@ export class CourseTeacherListItemDto extends CourseListItemDto {
   @ApiPropertyOptional()
   archivedAt?: Date | null;
 }
+
+/**
+ * Public (published) course card — extends the list item with the teacher's
+ * display name and the number of enrolled students.
+ */
+export class CoursePublicListItemDto extends CourseListItemDto {
+  @ApiProperty()
+  teacherName: string;
+
+  @ApiProperty()
+  students: number;
+}

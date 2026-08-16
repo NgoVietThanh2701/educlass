@@ -18,7 +18,7 @@ export default function Header() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   return (
-    <header className="relative w-full border-b border-border bg-background/85 backdrop-blur">
+    <header className="relative z-50 w-full border-b border-border bg-background/85 backdrop-blur">
       <Container className="py-3 sm:py-4 md:py-4 lg:py-4">
         <div className="flex h-12 items-center justify-between gap-3 sm:h-14 sm:gap-4 md:h-12 lg:h-12">
           <Logo />
