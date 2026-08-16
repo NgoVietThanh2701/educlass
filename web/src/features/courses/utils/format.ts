@@ -19,3 +19,21 @@ export function formatPrice(
     currency: "VND",
   }).format(price);
 }
+
+/**
+ * Display a course price as formatted VND, or "Miễn phí" when free (0).
+ * Returns "-" for empty/invalid values.
+ */
+export function coursePrice(price: number | undefined | null): string {
+  if (price === undefined || price === null || Number.isNaN(price)) return "-";
+  return price > 0 ? formatPrice(price) : "Miễn phí";
+}
+
+/** Split a multiline string into trimmed, non-empty lines (for bullet rendering). */
+export function splitLines(value?: string | null): string[] {
+  if (!value) return [];
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}

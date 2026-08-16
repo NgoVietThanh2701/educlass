@@ -21,6 +21,7 @@ import { useChangeCourseStatus } from "../hooks/use-change-course-status";
 import { useReorderSections } from "../hooks/use-reorder-sections";
 import { useReorderLessons } from "../hooks/use-reorder-lessons";
 import {
+  CATEGORY_OPTIONS,
   createCourseSchema,
   LEVEL_OPTIONS,
   type CreateCourseFormValues,
@@ -30,7 +31,7 @@ import {
   type CourseLanguage,
   type CreateCourseLevel,
 } from "../types/create-course.type";
-import type { CourseStatus } from "../types/course.type";
+import type { CourseCategory, CourseStatus } from "../types/course.type";
 import type { CourseDetailSection } from "../types/course-detail.type";
 import { CourseSections } from "./course-sections";
 import CreateSectionModal from "./modals/create-section-modal";
@@ -44,12 +45,18 @@ const STATUS_OPTIONS: { value: CourseStatus; label: string }[] = [
   { value: "ARCHIVED", label: "Đã lưu trữ" },
 ];
 
-export default function EditCourseForm({ courseId }: { courseId: string }) {
+export default function EditCourseForm({ slug }: { slug: string }) {
   const router = useRouter();
   const role = useAuthStore((state) => state.user?.role);
 
-  const { data: course, isLoading, isError, refetch } =
-    useTeacherCourseDetail(courseId);
+  const {
+    data: course,
+    isLoading,
+    isError,
+    refetch,
+  } = useTeacherCourseDetail(slug);
+  // Route param is the slug — resolve to the real id for mutations/modals below.
+  const courseId = course?.id ?? "";
   const updateMutation = useUpdateCourse(courseId);
   const changeStatusMutation = useChangeCourseStatus(courseId);
 
@@ -60,12 +67,10 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
     string | null
   >(null);
   const [sections, setSections] = useState<CourseDetailSection[]>([]);
-  const [deleteSectionTarget, setDeleteSectionTarget] = useState<
-    CourseDetailSection | null
-  >(null);
-  const [editSectionTarget, setEditSectionTarget] = useState<
-    CourseDetailSection | null
-  >(null);
+  const [deleteSectionTarget, setDeleteSectionTarget] =
+    useState<CourseDetailSection | null>(null);
+  const [editSectionTarget, setEditSectionTarget] =
+    useState<CourseDetailSection | null>(null);
 
   const form = useForm<CreateCourseFormValues>({
     resolver: zodResolver(createCourseSchema),
@@ -73,6 +78,7 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
       title: "",
       shortDescription: "",
       description: "",
+      category: "Lập trình",
       level: "BEGINNER",
       language: "vi",
       price: 0,
@@ -89,6 +95,7 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
       title: course.title ?? "",
       shortDescription: course.shortDescription ?? "",
       description: course.description ?? "",
+      category: (course.category as CourseCategory) ?? "Lập trình",
       level: course.level as CreateCourseLevel,
       language: (course.language as CourseLanguage) ?? "vi",
       price: course.price ?? 0,
@@ -134,7 +141,11 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
   };
 
   /** Move a lesson within its own section (never across sections). */
-  const handleMoveLesson = (sectionId: string, fromId: string, toId: string) => {
+  const handleMoveLesson = (
+    sectionId: string,
+    fromId: string,
+    toId: string,
+  ) => {
     const section = sections.find((item) => item.id === sectionId);
     if (!section) return;
     const from = section.lessons.find((lesson) => lesson.id === fromId);
@@ -154,7 +165,7 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
     });
   };
 
-  const goBack = () => router.push(ROUTES.COURSE_DETAIL.replace(":id", courseId));
+  const goBack = () => router.push(ROUTES.COURSE_DETAIL.replace(":slug", slug));
 
   const onSubmit = (values: CreateCourseFormValues) => {
     setError(null);
@@ -163,6 +174,7 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
         title: values.title,
         shortDescription: values.shortDescription,
         description: values.description,
+        category: values.category,
         level: values.level,
         language: values.language,
         price: values.price,
@@ -176,7 +188,9 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
           goBack();
         },
         onError: (err) => {
-          const apiError = err as { response?: { data?: { message?: string } } };
+          const apiError = err as {
+            response?: { data?: { message?: string } };
+          };
           setError(
             apiError?.response?.data?.message ??
               "Đã có lỗi xảy ra. Vui lòng thử lại.",
@@ -195,12 +209,15 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
         onSuccess: (updated) => {
           toast.success(
             `Trạng thái đã đổi thành "${
-              STATUS_OPTIONS.find((o) => o.value === updated.status)?.label ?? ""
+              STATUS_OPTIONS.find((o) => o.value === updated.status)?.label ??
+              ""
             }".`,
           );
         },
         onError: (err) => {
-          const apiError = err as { response?: { data?: { message?: string } } };
+          const apiError = err as {
+            response?: { data?: { message?: string } };
+          };
           setError(
             apiError?.response?.data?.message ??
               "Không thể đổi trạng thái. Vui lòng thử lại.",
@@ -221,8 +238,14 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
   if (role !== RoleUser.TEACHER) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3">
-        <p className="text-sm text-destructive">Bạn không có quyền chỉnh sửa khóa học.</p>
-        <Button variant="outline" size="sm" onClick={() => router.push(ROUTES.COURSE)}>
+        <p className="text-sm text-destructive">
+          Bạn không có quyền chỉnh sửa khóa học.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.push(ROUTES.COURSE)}
+        >
           Quay lại danh sách khóa học
         </Button>
       </div>
@@ -233,7 +256,9 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <span className="ml-2 text-sm text-muted-foreground">Đang tải thông tin khóa học...</span>
+        <span className="ml-2 text-sm text-muted-foreground">
+          Đang tải thông tin khóa học...
+        </span>
       </div>
     );
   }
@@ -241,7 +266,9 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
   if (isError) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3">
-        <p className="text-sm text-destructive">Không thể tải thông tin khóa học.</p>
+        <p className="text-sm text-destructive">
+          Không thể tải thông tin khóa học.
+        </p>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
           Thử lại
         </Button>
@@ -362,7 +389,11 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
             label="Cấp độ"
             error={form.formState.errors.level?.message}
           >
-            <Select id="level" disabled={updateMutation.isPending} {...form.register("level")}>
+            <Select
+              id="level"
+              disabled={updateMutation.isPending}
+              {...form.register("level")}
+            >
               {LEVEL_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
@@ -376,10 +407,32 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
             label="Ngôn ngữ"
             error={form.formState.errors.language?.message}
           >
-            <Select id="language" disabled={updateMutation.isPending} {...form.register("language")}>
+            <Select
+              id="language"
+              disabled={updateMutation.isPending}
+              {...form.register("language")}
+            >
               {LANGUAGES.map((lang) => (
                 <option key={lang.value} value={lang.value}>
                   {lang.label}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+
+          <FormField
+            htmlFor="category"
+            label="Danh mục"
+            error={form.formState.errors.category?.message}
+          >
+            <Select
+              id="category"
+              disabled={updateMutation.isPending}
+              {...form.register("category")}
+            >
+              {CATEGORY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
                 </option>
               ))}
             </Select>
@@ -509,7 +562,7 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
           }}
           onAddAssessment={(sectionId) =>
             router.push(
-              ROUTES.COURSE_ASSESSMENT_CREATE.replace(":courseId", courseId).replace(
+              ROUTES.COURSE_ASSESSMENT_CREATE.replace(":slug", slug).replace(
                 ":sectionId",
                 sectionId,
               ),
@@ -517,7 +570,7 @@ export default function EditCourseForm({ courseId }: { courseId: string }) {
           }
           onEditAssessment={(sectionId, assessmentId) =>
             router.push(
-              ROUTES.COURSE_ASSESSMENT_EDIT.replace(":courseId", courseId)
+              ROUTES.COURSE_ASSESSMENT_EDIT.replace(":slug", slug)
                 .replace(":sectionId", sectionId)
                 .replace(":assessmentId", assessmentId),
             )

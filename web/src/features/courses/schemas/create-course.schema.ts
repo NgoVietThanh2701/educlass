@@ -4,6 +4,8 @@ import {
   CREATE_COURSE_LEVELS,
   type CreateCourseLevel,
 } from "../types/create-course.type";
+import type { CourseCategory } from "../types/course.type";
+import { COURSE_CATEGORIES } from "../types/course.type";
 
 /**
  * Form validation mirroring the backend `CreateCourseDto`:
@@ -27,6 +29,7 @@ export const createCourseSchema = z.object({
     .max(500, "Mô tả ngắn tối đa 500 ký tự"),
   description: z.string().trim().min(1, "Mô tả chi tiết là bắt buộc"),
   level: z.enum(CREATE_COURSE_LEVELS),
+  category: z.enum(COURSE_CATEGORIES),
   language: z.enum(["vi", "en"]),
   price: z.number().min(0, "Giá không được nhỏ hơn 0"),
   estimatedDuration: z.number().min(0, "Thời lượng không được nhỏ hơn 0"),
@@ -43,3 +46,5 @@ export const LEVEL_OPTIONS: { value: CreateCourseLevel; label: string }[] = [
   { value: "ALL", label: "Tất cả" },
 ];
 
+export const CATEGORY_OPTIONS: { value: CourseCategory; label: string }[] =
+  COURSE_CATEGORIES.map((category) => ({ value: category, label: category }));

@@ -15,24 +15,14 @@ import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import { RoleUser } from "@/types/role.type";
-import { LEVEL_LABELS, STATUS_CONFIG } from "../constants/course";
+import {
+  ASSESSMENT_STATUS_CONFIG,
+  LEVEL_LABELS,
+  LESSON_TYPE_LABELS,
+  STATUS_CONFIG,
+} from "../constants/course";
 import { useTeacherCourseDetail } from "../hooks/use-course-detail";
-import type { CourseDetailAssessment, CourseDetailLesson } from "../types/course-detail.type";
-import { formatDate, formatPrice } from "../utils/format";
-
-const LESSON_TYPE_LABELS: Record<CourseDetailLesson["type"], string> = {
-  VIDEO: "Video",
-  TEXT: "Bài viết",
-};
-
-const ASSESSMENT_STATUS_CONFIG: Record<
-  CourseDetailAssessment["status"],
-  { label: string; variant: "default" | "secondary" | "destructive" }
-> = {
-  DRAFT: { label: "Bản nháp", variant: "secondary" },
-  PUBLISHED: { label: "Đã xuất bản", variant: "default" },
-  ARCHIVED: { label: "Đã lưu trữ", variant: "destructive" },
-};
+import { formatDate, formatPrice, splitLines } from "../utils/format";
 
 interface MetaItemProps {
   label: string;
@@ -50,20 +40,16 @@ function MetaItem({ label, value }: MetaItemProps) {
   );
 }
 
-/** Split a multiline string into non-empty lines for bullet rendering. */
-function splitLines(value?: string | null): string[] {
-  if (!value) return [];
-  return value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-export default function CourseDetail({ courseId }: { courseId: string }) {
+export default function CourseDetail({ slug }: { slug: string }) {
   const router = useRouter();
   const role = useAuthStore((state) => state.user?.role);
-  const { data: course, isLoading, isError, isFetching, refetch } =
-    useTeacherCourseDetail(courseId);
+  const {
+    data: course,
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useTeacherCourseDetail(slug);
 
   if (role === null) {
     return (
@@ -76,7 +62,9 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
   if (role !== RoleUser.TEACHER) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3">
-        <p className="text-sm text-destructive">Bạn không có quyền xem khóa học này.</p>
+        <p className="text-sm text-destructive">
+          Bạn không có quyền xem khóa học này.
+        </p>
         <Button
           variant="outline"
           size="sm"
@@ -95,7 +83,9 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <span className="ml-2 text-sm text-muted-foreground">Đang tải thông tin khóa học...</span>
+        <span className="ml-2 text-sm text-muted-foreground">
+          Đang tải thông tin khóa học...
+        </span>
       </div>
     );
   }
@@ -103,7 +93,9 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
   if (isError || !course) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3">
-        <p className="text-sm text-destructive">Không thể tải thông tin khóa học.</p>
+        <p className="text-sm text-destructive">
+          Không thể tải thông tin khóa học.
+        </p>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
           Thử lại
         </Button>
@@ -138,7 +130,9 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
           <h1 className="text-2xl font-bold">{course.title}</h1>
           <Badge variant={status.variant}>{status.label}</Badge>
         </div>
-        <Button onClick={() => router.push(ROUTES.COURSE_EDIT.replace(":id", course.id))}>
+        <Button
+          onClick={() => router.push(ROUTES.COURSE_EDIT.replace(":slug", slug))}
+        >
           <Pencil className="h-4 w-4" />
           Chỉnh sửa
         </Button>
@@ -161,6 +155,7 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
           </div>
 
           <dl className="grid grid-cols-2 gap-4">
+            <MetaItem label="Danh mục" value={course.category ?? "-"} />
             <MetaItem
               label="Cấp độ"
               value={LEVEL_LABELS[course.level] ?? course.level}
@@ -171,7 +166,10 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
               label="Thời lượng"
               value={`${course.estimatedDuration ?? 0} phút`}
             />
-            <MetaItem label="Ngày xuất bản" value={formatDate(course.publishedAt)} />
+            <MetaItem
+              label="Ngày xuất bản"
+              value={formatDate(course.publishedAt)}
+            />
             <MetaItem label="Ngày tạo" value={formatDate(course.createdAt)} />
             <MetaItem label="Số phần" value={course.sections.length} />
             <MetaItem label="Bài học" value={totalLessons} />
@@ -281,9 +279,13 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
                               Bài kiểm tra: {assessment.title}
                             </span>
                             <span className="shrink-0 text-xs text-muted-foreground">
-                              {assessment.questionCount} câu · {assessment.duration} phút
+                              {assessment.questionCount} câu ·{" "}
+                              {assessment.duration} phút
                             </span>
-                            <Badge variant={config.variant} className="shrink-0">
+                            <Badge
+                              variant={config.variant}
+                              className="shrink-0"
+                            >
                               {config.label}
                             </Badge>
                           </div>

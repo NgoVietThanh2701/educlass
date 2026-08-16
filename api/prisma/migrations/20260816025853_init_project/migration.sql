@@ -75,6 +75,7 @@ CREATE TABLE "courses" (
     "thumbnailObjectKey" TEXT NOT NULL,
     "level" "CourseLevel" NOT NULL DEFAULT 'ALL',
     "language" TEXT NOT NULL DEFAULT 'vi',
+    "category" TEXT,
     "price" DECIMAL(10,2) NOT NULL DEFAULT 0,
     "status" "CourseStatus" NOT NULL DEFAULT 'DRAFT',
     "publishedAt" TIMESTAMP(3),

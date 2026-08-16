@@ -22,6 +22,7 @@ export const courseListSelect = Prisma.validator<Prisma.CourseSelect>()({
   shortDescription: true,
   thumbnailObjectKey: true,
   level: true,
+  category: true,
   language: true,
   price: true,
   publishedAt: true,
@@ -91,6 +92,7 @@ type CourseListMapperInput = {
   shortDescription: string | null;
   thumbnailObjectKey: string;
   level: CourseLevel;
+  category: string | null;
   language: string;
   price: Prisma.Decimal;
   publishedAt: Date | null;
@@ -127,6 +129,7 @@ export function toCourseListItem(course: CourseListMapperInput): CourseListItemD
     shortDescription: course.shortDescription,
     thumbnailUrl: buildThumbnailUrl(course.thumbnailObjectKey),
     level: course.level,
+    category: course.category,
     language: course.language,
     price: course.price.toNumber(),
     publishedAt: course.publishedAt,
@@ -181,6 +184,7 @@ export function toCoursePublicDetail(course: CoursePublicDetailMapperInput): Cou
     description: course.description,
     thumbnailUrl: buildThumbnailUrl(course.thumbnailObjectKey),
     level: course.level,
+    category: course.category,
     language: course.language,
     price: course.price.toNumber(),
     publishedAt: course.publishedAt,

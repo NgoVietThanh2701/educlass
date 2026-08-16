@@ -137,6 +137,7 @@ model Course {
   thumbnailObjectKey   String
   level               CourseLevel  @default(ALL)
   language          String       @default("vi")
+  category          String?
   price             Decimal      @default(0) @db.Decimal(10, 2)
   status            CourseStatus @default(DRAFT)
   publishedAt       DateTime?

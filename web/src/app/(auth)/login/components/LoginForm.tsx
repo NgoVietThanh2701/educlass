@@ -1,6 +1,7 @@
 "use client";
 
-import { CheckIcon, GoogleIcon } from "@/components/icons";
+import { GoogleIcon } from "@/components/icons";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
 import { useLogin } from "@/features/auth/hooks/use-login";
@@ -80,7 +81,7 @@ export default function LoginForm() {
               className="flex h-4 w-4 shrink-0 items-center justify-center rounded bg-white outline-1 outline-slate-300 group-focus-within:outline-2 group-focus-within:outline-blue-600 group-has-[input:checked]:bg-blue-600 group-has-[input:checked]:outline-blue-600 dark:bg-neutral-700 dark:outline-neutral-600"
               aria-hidden="true"
             >
-              <CheckIcon className="text-white opacity-0 group-has-[input:checked]:opacity-100" />
+              <Check className="h-3 w-3 text-white opacity-0 group-has-[input:checked]:opacity-100" />
             </span>
 
             <span className="ml-3 text-sm text-slate-700 dark:text-slate-300">

@@ -17,6 +17,7 @@ import { useAuthStore } from "@/features/auth/store/auth.store";
 import { RoleUser } from "@/types/role.type";
 import { useCreateCourse } from "../hooks/use-create-course";
 import {
+  CATEGORY_OPTIONS,
   createCourseSchema,
   LEVEL_OPTIONS,
   type CreateCourseFormValues,
@@ -41,6 +42,7 @@ export default function CreateCourseForm() {
       title: "",
       shortDescription: "",
       description: "",
+      category: "Lập trình",
       level: "BEGINNER",
       language: "vi",
       price: 0,
@@ -90,6 +92,7 @@ export default function CreateCourseForm() {
           title: values.title,
           shortDescription: values.shortDescription,
           description: values.description,
+          category: values.category,
           level: values.level,
           language: values.language,
           price: values.price,
@@ -224,7 +227,11 @@ export default function CreateCourseForm() {
             label="Cấp độ"
             error={form.formState.errors.level?.message}
           >
-            <Select id="level" disabled={createCourseMutation.isPending} {...form.register("level")}>
+            <Select
+              id="level"
+              disabled={createCourseMutation.isPending}
+              {...form.register("level")}
+            >
               {LEVEL_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
@@ -238,10 +245,31 @@ export default function CreateCourseForm() {
             label="Ngôn ngữ"
             error={form.formState.errors.language?.message}
           >
-            <Select id="language" disabled={createCourseMutation.isPending} {...form.register("language")}>
+            <Select
+              id="language"
+              disabled={createCourseMutation.isPending}
+              {...form.register("language")}
+            >
               {LANGUAGES.map((lang) => (
                 <option key={lang.value} value={lang.value}>
                   {lang.label}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+          <FormField
+            htmlFor="category"
+            label="Danh mục"
+            error={form.formState.errors.category?.message}
+          >
+            <Select
+              id="category"
+              disabled={createCourseMutation.isPending}
+              {...form.register("category")}
+            >
+              {CATEGORY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
                 </option>
               ))}
             </Select>

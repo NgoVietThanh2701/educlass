@@ -11,6 +11,19 @@ export const COURSE_LEVEL = ["BEGINNER", "INTERMEDIATE", "ADVANCED"] as const;
 export type CourseLevel = (typeof COURSE_LEVEL)[number];
 
 /**
+ * Course categories — mirror the backend `CourseCategory` enum. Values ARE the
+ * display labels (Vietnamese), so they can be rendered directly.
+ */
+export const COURSE_CATEGORIES = [
+  "Lập trình",
+  "Marketing",
+  "Design",
+  "Đồ họa",
+  "Truyền thông",
+] as const;
+export type CourseCategory = (typeof COURSE_CATEGORIES)[number];
+
+/**
  * Base course list item returned by both the public and student list endpoints
  * (`CourseListItemDto` on the backend). The `status` field is intentionally
  * NOT part of this type: only the teacher list response includes it.
@@ -26,6 +39,7 @@ export interface Course {
   teacherName?: string | null;
   students?: number;
   level: CourseLevel;
+  category?: CourseCategory | null;
   language: string;
   price: number;
   publishedAt?: Date | string | null;

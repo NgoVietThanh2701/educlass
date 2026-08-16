@@ -1,4 +1,5 @@
 import { ROUTES } from "@/constants/routes";
+import { RoleUser } from "@/types/role.type";
 import {
   LayoutDashboard,
   BookOpen,
@@ -18,40 +19,50 @@ export type NavItem = {
   subItems?: { name: string; path: string; icon?: React.ReactNode }[];
 };
 
-// Both STUDENT and TEACHER share the same base dashboard menu today. The `role`
-// parameter is kept so future role-specific entries (e.g. teacher-only tools)
-// are easy to add without restructuring the callers.
-const baseItems: NavItem[] = [
-  { name: "Dashboard", icon: <LayoutDashboard />, path: ROUTES.DASHBOARD },
-  {
-    name: "Courses",
-    icon: <BookOpen />,
-    path: ROUTES.COURSE,
-    subItems: [
-      { name: "My Courses", path: ROUTES.COURSE, icon: <FolderOpen /> },
-      { name: "New Course", path: ROUTES.COURSE_CREATE, icon: <Plus /> },
-    ],
-  },
-  {
-    name: "Messages",
-    icon: <MessageSquare />,
-    path: ROUTES.MESSAGE_INBOX,
-    subItems: [
-      { name: "Inbox", path: ROUTES.MESSAGE_INBOX, icon: <Inbox /> },
-      { name: "Compose", path: ROUTES.MESSAGE_COMPOSE, icon: <Send /> },
-    ],
-  },
-];
-
-// Common items for both roles (placed at the bottom, under their own section).
+// Common items shown at the bottom of the menu for EVERY role.
 const commonItems: NavItem[] = [
   { name: "Settings", icon: <Settings />, path: ROUTES.SETTINGS },
   { name: "Help & Support", icon: <HelpCircle />, path: ROUTES.HELP },
 ];
 
-// Role-based navigation items
+// Role-based navigation items.
 export const getNavItems = (role: string | undefined): NavItem[] => {
-  void role; // intentionally unused — roles share one menu (see comment above)
+  const isTeacher = role === RoleUser.TEACHER;
+
+  const baseItems: NavItem[] = [
+    { name: "Dashboard", icon: <LayoutDashboard />, path: ROUTES.DASHBOARD },
+    {
+      // The `Courses` entry differs per role:
+      //  - TEACHER: "My Courses" + "New Course" (full authoring tools).
+      //  - STUDENT: "My Courses" only (courses the student is enrolled in).
+      name: "Courses",
+      icon: <BookOpen />,
+      path: ROUTES.COURSE,
+      subItems: [
+        { name: "My Courses", path: ROUTES.COURSE, icon: <FolderOpen /> },
+        ...(isTeacher
+          ? [
+              {
+                name: "New Course",
+                path: ROUTES.COURSE_CREATE,
+                icon: <Plus />,
+              },
+            ]
+          : []),
+      ],
+    },
+    {
+      // Chat entry shared by both roles — the Chat UI routes all conversations
+      // through the same inbox/compose surfaces (built next).
+      name: "Messages",
+      icon: <MessageSquare />,
+      path: ROUTES.MESSAGE_INBOX,
+      subItems: [
+        { name: "Inbox", path: ROUTES.MESSAGE_INBOX, icon: <Inbox /> },
+        { name: "Compose", path: ROUTES.MESSAGE_COMPOSE, icon: <Send /> },
+      ],
+    },
+  ];
 
   return [...baseItems, ...commonItems];
 };

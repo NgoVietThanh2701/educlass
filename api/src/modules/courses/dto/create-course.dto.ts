@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CourseLevel } from '@prisma/client';
 import { IsEnum, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { CourseCategory } from '../course-category.enum';
 
 export class CreateCourseDto {
   @ApiProperty()
@@ -21,6 +22,11 @@ export class CreateCourseDto {
   @IsOptional()
   @IsEnum(CourseLevel)
   level?: CourseLevel;
+
+  @ApiPropertyOptional({ description: 'Course category (Vietnamese label)' })
+  @IsOptional()
+  @IsEnum(CourseCategory)
+  category?: CourseCategory;
 
   @ApiPropertyOptional({ default: 'vi' })
   @IsOptional()

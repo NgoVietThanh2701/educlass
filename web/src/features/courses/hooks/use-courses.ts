@@ -5,8 +5,10 @@ import { RoleUser } from "@/types/role.type";
 import {
   getTeacherCourses,
   getStudentCourses,
+  getPublicCourse,
   getPublicCourses,
 } from "../api/courses";
+import type { PublicCoursesParams } from "../api/courses";
 import type { Course, TeacherCourse } from "../types/course.type";
 
 export const COURSE_QUERY_KEYS = {
@@ -14,19 +16,35 @@ export const COURSE_QUERY_KEYS = {
   teacher: ["courses", "teacher"] as const,
   student: ["courses", "student"] as const,
   public: ["courses", "public"] as const,
+  detail: ["courses", "detail"] as const,
 };
 
-/** Published courses for the public homepage — no auth required. */
-export function usePublicCourses(
-  params: { page?: number; limit?: number } = {},
-) {
+/** Published courses for the public homepage/catalog — no auth required. */
+export function usePublicCourses(params: PublicCoursesParams = {}) {
+  const paramsKey = JSON.stringify([
+    params.page ?? 1,
+    params.limit ?? 10,
+    params.category || null,
+    params.price || null,
+    params.level || null,
+    params.search?.trim() || null,
+    params.sortBy ?? "publishedAt",
+    params.order ?? "desc",
+  ]);
+
   return useQuery({
-    queryKey: [
-      ...COURSE_QUERY_KEYS.public,
-      params.page ?? 1,
-      params.limit ?? 10,
-    ],
+    queryKey: [...COURSE_QUERY_KEYS.public, paramsKey],
     queryFn: () => getPublicCourses(params),
+  });
+}
+
+/** Single published course detail (public catalog). Disabled until a slug exists. */
+export function usePublicCourse(slug: string | undefined) {
+  return useQuery({
+    queryKey: [...COURSE_QUERY_KEYS.detail, slug] as const,
+    queryFn: () => getPublicCourse(slug as string),
+    enabled: !!slug,
+    staleTime: 30_000,
   });
 }
 

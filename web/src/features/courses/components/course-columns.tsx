@@ -23,8 +23,8 @@ import type {
   CourseLevel,
   TeacherCourse,
 } from "../types/course.type";
-import { LEVEL_LABELS, STATUS_CONFIG } from "../constants/course";
-import { formatDate, formatPrice } from "../utils/format";
+import { LEVEL_LABELS, STATUS_CONFIG, CATEGORY_LABELS } from "../constants/course";
+import { coursePrice, formatDate, formatPrice } from "../utils/format";
 
 // Create column helper with generic for the row type only
 const columnHelper = createColumnHelper<Course>();
@@ -40,7 +40,7 @@ export interface CourseColumnsOptions {
 }
 
 // Columns shared by both roles.
-const thumbnailColumn: ColumnDef<Course, unknown> = columnHelper.accessor(
+export const thumbnailColumn: ColumnDef<Course, unknown> = columnHelper.accessor(
   (row) => row.thumbnailUrl,
   {
     id: "thumbnail",
@@ -67,15 +67,22 @@ const thumbnailColumn: ColumnDef<Course, unknown> = columnHelper.accessor(
   },
 ) as ColumnDef<Course, unknown>;
 
-const titleColumn: ColumnDef<Course, unknown> = columnHelper.accessor(
+export const titleColumn: ColumnDef<Course, unknown> = columnHelper.accessor(
   (row) => row.title,
   {
     id: "title",
     header: "Khóa học",
+    size: 260,
+    minSize: 180,
+    maxSize: 320,
     cell: ({ row }) => (
-      <div>
-        <p className="font-medium text-foreground">{row.getValue("title")}</p>
-        <p className="text-sm text-muted-foreground">
+      // Fixed, narrower width + text truncation prevents long titles from
+      // pushing the table wider than the viewport (no horizontal scroll).
+      <div className="w-44 min-w-0 xl:w-52">
+        <p className="line-clamp-2 whitespace-normal font-medium text-foreground">
+          {row.getValue("title")}
+        </p>
+        <p className="truncate text-sm text-muted-foreground">
           {row.original.shortDescription}
         </p>
       </div>
@@ -83,15 +90,65 @@ const titleColumn: ColumnDef<Course, unknown> = columnHelper.accessor(
   },
 ) as ColumnDef<Course, unknown>;
 
-const levelColumn: ColumnDef<Course, unknown> = columnHelper.accessor(
-  (row) => row.level,
+/**
+ * Level badge column — shared by both role table variants. `variant` differs
+ * (teacher uses `secondary`, student uses `outline`); rendering is identical.
+ */
+export function createLevelColumn(
+  variant: "secondary" | "outline" = "secondary",
+): ColumnDef<Course, unknown> {
+  return columnHelper.accessor(
+    (row) => row.level,
+    {
+      id: "level",
+      header: "Cấp độ",
+      cell: ({ getValue }) => {
+        const level = getValue() as CourseLevel | undefined;
+        const label = level ? LEVEL_LABELS[level] : "-";
+        return <Badge variant={variant}>{label}</Badge>;
+      },
+    },
+  ) as ColumnDef<Course, unknown>;
+}
+
+/**
+ * Price column. `showFreeLabel` renders "Miễn phí" for free courses
+ * (student list); otherwise plain VND formatting (teacher list).
+ */
+export function createPriceColumn({
+  showFreeLabel = false,
+  header = "Giá",
+}: { showFreeLabel?: boolean; header?: string } = {}): ColumnDef<Course, unknown> {
+  return columnHelper.accessor(
+    (row) => row.price,
+    {
+      id: "price",
+      header,
+      cell: ({ getValue }) => {
+        const price = getValue() as number | undefined;
+        return (
+          <span className="text-sm">
+            {showFreeLabel ? coursePrice(price) : formatPrice(price)}
+          </span>
+        );
+      },
+    },
+  ) as ColumnDef<Course, unknown>;
+}
+
+/** Category badge column — shown on the student list (enrolled categories). */
+export const categoryColumn: ColumnDef<Course, unknown> = columnHelper.accessor(
+  (row) => row.category,
   {
-    id: "level",
-    header: "Cấp độ",
+    id: "category",
+    header: "Chủ đề",
     cell: ({ getValue }) => {
-      const level = getValue() as CourseLevel | undefined;
-      const label = level ? LEVEL_LABELS[level] : "-";
-      return <Badge variant="secondary">{label}</Badge>;
+      const category = getValue() as Course["category"];
+      return (
+        <Badge variant="secondary">
+          {category ? CATEGORY_LABELS[category] : "—"}
+        </Badge>
+      );
     },
   },
 ) as ColumnDef<Course, unknown>;
@@ -108,15 +165,6 @@ const statusColumn: ColumnDef<Course, unknown> = columnHelper.accessor(
         : { label: "-", variant: "secondary" as const };
       return <Badge variant={config.variant}>{config.label}</Badge>;
     },
-  },
-) as ColumnDef<Course, unknown>;
-
-const priceColumn: ColumnDef<Course, unknown> = columnHelper.accessor(
-  (row) => row.price,
-  {
-    id: "price",
-    header: "Giá",
-    cell: ({ getValue }) => formatPrice(getValue() as number | undefined),
   },
 ) as ColumnDef<Course, unknown>;
 
@@ -166,15 +214,17 @@ const createdAtColumn: ColumnDef<Course, unknown> = columnHelper.accessor(
 const BASE_COLUMNS: ColumnDef<Course, unknown>[] = [
   thumbnailColumn,
   titleColumn,
-  levelColumn,
-  priceColumn,
+  createLevelColumn(),
+  createPriceColumn(),
   languageColumn,
   durationColumn,
   publishedAtColumn,
   createdAtColumn,
 ];
 
-function actionsColumn(options: CourseColumnsOptions): ColumnDef<Course, unknown> {
+function actionsColumn(
+  options: CourseColumnsOptions,
+): ColumnDef<Course, unknown> {
   return columnHelper.display({
     id: "actions",
     header: "Thao tác",
@@ -199,7 +249,11 @@ function actionsColumn(options: CourseColumnsOptions): ColumnDef<Course, unknown
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0" aria-label="More actions">
+            <Button
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              aria-label="More actions"
+            >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>

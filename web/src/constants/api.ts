@@ -12,6 +12,7 @@ export const API_ENDPOINT = {
   COURSE_LESSONS: "/courses", // base path; lessons live at /courses/:courseId/sections/:sectionId/lessons (teacher)
   TEACHER_COURSES: "/teacher/courses",
   STUDENT_COURSES: "/student/courses",
+  ENROLLMENTS: "/enrollments",
   PUBLIC_COURSES: "/public/courses",
 
   // assessments

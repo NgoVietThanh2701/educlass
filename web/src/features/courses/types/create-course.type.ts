@@ -1,4 +1,4 @@
-import type { CourseStatus } from "./course.type";
+import type { CourseCategory, CourseStatus } from "./course.type";
 
 /**
  * Create-course types mirroring the backend `CreateCourseDto`.
@@ -27,6 +27,7 @@ export interface CreateCourseRequest {
   shortDescription: string;
   description: string;
   level?: CreateCourseLevel;
+  category?: CourseCategory;
   language?: CourseLanguage;
   price: number;
   estimatedDuration: number;
@@ -50,4 +51,3 @@ export type UpdateCourseRequest = Partial<CreateCourseRequest>;
 export interface ChangeCourseStatusRequest {
   status: CourseStatus;
 }
-

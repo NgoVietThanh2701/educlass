@@ -6,14 +6,14 @@ import CreateAssessmentPage from "@/features/assessment/components/create-assess
 
 export default function EditAssessmentPage() {
   const params = useParams<{
-    courseId: string;
+    slug: string;
     sectionId: string;
     assessmentId: string;
   }>();
 
   return (
     <CreateAssessmentPage
-      courseId={params.courseId}
+      courseId={params.slug}
       sectionId={params.sectionId}
       assessmentId={params.assessmentId}
     />

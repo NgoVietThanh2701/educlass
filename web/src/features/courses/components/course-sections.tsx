@@ -17,19 +17,12 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  ASSESSMENT_STATUS_LABELS,
+  LESSON_TYPE_LABELS,
+} from "../constants/course";
 import { LessonActions } from "./lesson-actions";
-import type { CourseDetailAssessment, CourseDetailLesson, CourseDetailSection } from "../types/course-detail.type";
-
-const LESSON_TYPE_LABELS: Record<CourseDetailLesson["type"], string> = {
-  VIDEO: "Video",
-  TEXT: "Bài viết",
-};
-
-const ASSESSMENT_STATUS_LABELS: Record<CourseDetailAssessment["status"], string> = {
-  DRAFT: "Bản nháp",
-  PUBLISHED: "Đã xuất bản",
-  ARCHIVED: "Đã lưu trữ",
-};
+import type { CourseDetailSection } from "../types/course-detail.type";
 
 interface CourseSectionsProps {
   courseId: string;

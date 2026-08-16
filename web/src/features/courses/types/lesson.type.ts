@@ -2,7 +2,12 @@
  * Lesson types mirroring the backend lesson DTOs.
  * Endpoint: `/courses/:courseId/sections/:sectionId/lessons` (TEACHER only).
  */
-import type { LessonType, LessonUnlockRule } from "./course-detail.type";
+import type {
+  CourseDetailAttachment,
+  CourseDetailLesson,
+  LessonType,
+  LessonUnlockRule,
+} from "./course-detail.type";
 
 /**
  * Payload matching `CreateLessonDto`. `order` is intentionally omitted so the
@@ -26,34 +31,7 @@ export interface LessonContentRequest {
 }
 
 /** Response matching `LessonAttachmentResponseDto`. */
-export interface LessonAttachmentResponse {
-  id: string;
-  lessonId: string;
-  fileName: string;
-  objectKey: string;
-  resourceType: string;
-  size: number;
-  mimeType: string;
-  createdAt: Date | string;
-}
+export type LessonAttachmentResponse = CourseDetailAttachment;
 
 /** Response matching `LessonResponseDto`. */
-export interface LessonResponse {
-  id: string;
-  sectionId: string;
-  title: string;
-  description?: string | null;
-  type: LessonType;
-  order: number;
-  durationSeconds?: number | null;
-  isPreview: boolean;
-  unlockRule: LessonUnlockRule;
-  content?: {
-    objectKey?: string | null;
-    videoDuration?: number | null;
-    textContent?: string | null;
-  } | null;
-  attachments: LessonAttachmentResponse[];
-  createdAt: Date | string;
-  updatedAt: Date | string;
-}
+export type LessonResponse = CourseDetailLesson;

@@ -22,6 +22,9 @@ export async function createCourse({
   formData.append("title", data.title);
   formData.append("shortDescription", data.shortDescription);
   formData.append("description", data.description);
+  if (data.category) {
+    formData.append("category", data.category);
+  }
   formData.append("level", data.level ?? "ALL");
   formData.append("language", data.language ?? "vi");
   formData.append("price", String(data.price));

@@ -26,6 +26,9 @@ export class CourseResponseDto {
   @ApiProperty({ enum: CourseLevel })
   level: CourseLevel;
 
+  @ApiPropertyOptional({ description: 'Course category (Vietnamese label)' })
+  category?: string | null;
+
   @ApiProperty()
   language: string;
 

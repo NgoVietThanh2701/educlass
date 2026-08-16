@@ -1,11 +1,16 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ROUTES } from "@/constants/routes";
-import { Course, CourseStatusFilter, TeacherCourse } from "@/features/courses/types/course.type";
+import {
+  Course,
+  CourseStatusFilter,
+  TeacherCourse,
+} from "@/features/courses/types/course.type";
 import { createCourseColumns } from "@/features/courses/components/course-columns";
+import { createStudentCourseColumns } from "@/features/courses/components/student-course-columns";
 import { useCourses } from "@/features/courses/hooks/use-courses";
 import { useDeleteCourse } from "@/features/courses/hooks/use-delete-course";
 import { DataTable } from "@/components/ui/data-table";
@@ -42,19 +47,26 @@ const STATUS_BADGE_VARIANT: Record<
 
 export default function CoursePage() {
   const router = useRouter();
-  const { data: courses = [], isLoading, isError, isFetching, refetch, isTeacher } = useCourses();
-const deleteMutation = useDeleteCourse();
+  const {
+    data: courses = [],
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+    isTeacher,
+  } = useCourses();
+  const deleteMutation = useDeleteCourse();
 
   const handleView = useCallback(
     (course: Course) => {
-      router.push(`${ROUTES.COURSE_DETAIL.replace(":id", course.id)}`);
+      router.push(ROUTES.COURSE_DETAIL.replace(":slug", course.slug));
     },
     [router],
   );
 
   const handleEdit = useCallback(
     (course: Course) => {
-      router.push(`${ROUTES.COURSE_EDIT.replace(":id", course.id)}`);
+      router.push(ROUTES.COURSE_EDIT.replace(":slug", course.slug));
     },
     [router],
   );
@@ -68,10 +80,14 @@ const deleteMutation = useDeleteCourse();
     [deleteMutation],
   );
 
-  const handleStudy = useCallback((course: Course) => {
-    alert(`Going to study: ${course.title}`);
-    // TODO: Navigate to the student learning page (built later).
-  }, []);
+  // `handleStudy` is the STUDENT entry point: route to the student learning hub.
+  // For TEACHERS this callback is never wired up (their rows expose View/Edit/Delete).
+  const handleStudy = useCallback(
+    (course: Course) => {
+      router.push(ROUTES.STUDENT_COURSE_LEARN.replace(":slug", course.slug));
+    },
+    [router],
+  );
 
   const [statusFilter, setStatusFilter] = useState<CourseStatusFilter>("ALL");
 
@@ -85,15 +101,18 @@ const deleteMutation = useDeleteCourse();
     );
   }, [courses, statusFilter, isTeacher]);
 
+  // Pick the column set per role: leaner, learning-focused columns for STUDENTS.
   const columns = useMemo(
     () =>
-      createCourseColumns({
-        isTeacher,
-        onView: handleView,
-        onEdit: handleEdit,
-        onDelete: handleDelete,
-        onStudy: handleStudy,
-      }),
+      isTeacher
+        ? createCourseColumns({
+            isTeacher,
+            onView: handleView,
+            onEdit: handleEdit,
+            onDelete: handleDelete,
+            onStudy: handleStudy,
+          })
+        : createStudentCourseColumns({ onStudy: handleStudy }),
     [isTeacher, handleView, handleEdit, handleDelete, handleStudy],
   );
 
@@ -104,7 +123,9 @@ const deleteMutation = useDeleteCourse();
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <span className="ml-2 text-sm text-muted-foreground">Đang tải khóa học...</span>
+        <span className="ml-2 text-sm text-muted-foreground">
+          Đang tải khóa học...
+        </span>
       </div>
     );
   }
@@ -113,7 +134,9 @@ const deleteMutation = useDeleteCourse();
   if (isError) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3">
-        <p className="text-sm text-destructive">Không thể tải danh sách khóa học.</p>
+        <p className="text-sm text-destructive">
+          Không thể tải danh sách khóa học.
+        </p>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
           Thử lại
         </Button>

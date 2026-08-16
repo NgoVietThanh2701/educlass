@@ -35,7 +35,10 @@ import {
   type AssessmentInfoFormValues,
   assessmentInfoSchema,
 } from "../schemas/assessment.schema";
-import type { AssessmentDetail, AssessmentQuestion } from "../types/assessment.type";
+import type {
+  AssessmentDetail,
+  AssessmentQuestion,
+} from "../types/assessment.type";
 import QuestionEditor from "./question-editor";
 
 interface CreateAssessmentPageProps {
@@ -87,12 +90,7 @@ export default function CreateAssessmentPage({
   });
 
   const goBack = () =>
-    router.push(
-      ROUTES.COURSE_EDIT.replace(":id", courseId).replace(
-        ":courseId",
-        courseId,
-      ),
-    );
+    router.push(ROUTES.COURSE_EDIT.replace(":slug", courseId));
 
   // EDIT mode: load the assessment once, pre-fill the info form and seed the
   // question list from the server.
@@ -172,7 +170,9 @@ export default function CreateAssessmentPage({
     if (!assessment) return;
     const detail = await getAssessmentDetail(assessment.id);
     setAssessment(detail);
-    setQuestions([...(detail.questions ?? [])].sort((a, b) => a.order - b.order));
+    setQuestions(
+      [...(detail.questions ?? [])].sort((a, b) => a.order - b.order),
+    );
   };
 
   const handleQuestionSaved = async () => {
@@ -508,7 +508,9 @@ export default function CreateAssessmentPage({
                             size="icon"
                             title="Xóa câu hỏi"
                             disabled={deletingQuestionId === question.id}
-                            onClick={() => void handleDeleteQuestion(question.id)}
+                            onClick={() =>
+                              void handleDeleteQuestion(question.id)
+                            }
                           >
                             {deletingQuestionId === question.id ? (
                               <Loader2 className="h-4 w-4 animate-spin text-destructive" />
@@ -622,7 +624,12 @@ export default function CreateAssessmentPage({
 
           {/* API errors shown via toast */}
           <div className="flex items-center justify-end gap-2">
-            <Button type="button" variant="outline" onClick={goBack} disabled={creating}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={goBack}
+              disabled={creating}
+            >
               Hủy
             </Button>
             <Button type="submit" disabled={creating}>

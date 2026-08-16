@@ -21,7 +21,7 @@ import {
 import { sectionSelect, toSectionResponse } from '@modules/sections/section.mapper';
 import { AttachmentService } from '@common/services/attachment.service';
 import { Injectable } from '@nestjs/common';
-import { AssessmentStatus, CourseStatus } from '@prisma/client';
+import { AssessmentStatus, CourseStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
 import { generateSlug } from '@common/utils/generate-code.util';
 import { PrismaErrorCode } from '@common/constants/prisma-error.constant';
@@ -84,6 +84,7 @@ export class CoursesService {
             description: dto.description,
             thumbnailObjectKey,
             level: dto.level,
+            category: dto.category,
             language: dto.language,
             price: dto.price ?? 0,
             estimatedDuration: dto.estimatedDuration,
@@ -112,13 +113,16 @@ export class CoursesService {
   }> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
-    const where = { status: CourseStatus.PUBLISHED };
+    const sortBy = query.sortBy ?? 'publishedAt';
+    const order = query.order ?? 'desc';
+    const where = this.buildPublishedCourseWhere(query);
+    const orderBy: Prisma.CourseOrderByWithRelationInput = { [sortBy]: order };
 
     const [total, courses] = await Promise.all([
       this.prisma.course.count({ where }),
       this.prisma.course.findMany({
         where,
-        orderBy: { publishedAt: 'desc' },
+        orderBy,
         skip: (page - 1) * limit,
         take: limit,
         select: coursePublicListSelect,
@@ -129,6 +133,36 @@ export class CoursesService {
       data: courses.map(toCoursePublicListItem),
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  /** Translate the public catalog query (filters/search/sort) into Prisma conditions. */
+  private buildPublishedCourseWhere(query: GetPublicCoursesQueryDto): Prisma.CourseWhereInput {
+    const where: Prisma.CourseWhereInput = {
+      status: CourseStatus.PUBLISHED,
+    };
+
+    if (query.category) {
+      where.category = query.category;
+    }
+
+    if (query.level) {
+      where.level = query.level;
+    }
+
+    if (query.price === 'free') {
+      where.price = 0;
+    } else if (query.price === 'paid') {
+      where.price = { gt: 0 };
+    }
+
+    if (query.search) {
+      where.OR = [
+        { title: { contains: query.search, mode: 'insensitive' } },
+        { shortDescription: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    return where;
   }
 
   async findOnePublishedBySlug(slug: string): Promise<CoursePublicDetailDto> {
@@ -152,7 +186,9 @@ export class CoursesService {
     return courses.map(toCourseTeacherListItem);
   }
 
-  async findTeacherDetail(courseId: string, teacherId: string): Promise<CourseTeacherDetailDto> {
+  async findTeacherDetail(param: string, teacherId: string): Promise<CourseTeacherDetailDto> {
+    // The route param may be the course id OR its slug — resolve to the id first.
+    const courseId = await this.resolveOwnCourseId(param, teacherId);
     await this.courseAccess.ensureTeacherOwnsCourse(courseId, teacherId);
 
     const course = await this.prisma.course.findUnique({
@@ -422,6 +458,21 @@ export class CoursesService {
     });
 
     return toCourseResponse(updated);
+  }
+
+  /**
+   * Resolve a teacher's own course by `id` OR `slug`. Used by the detail lookup
+   * so the dashboard can use the SEO-friendly slug in the URL.
+   */
+  private async resolveOwnCourseId(param: string, teacherId: string): Promise<string> {
+    const course = await this.prisma.course.findFirst({
+      where: { teacherId, OR: [{ id: param }, { slug: param }] },
+      select: { id: true },
+    });
+
+    if (!course) throw AppException.notFound('Course not found');
+
+    return course.id;
   }
 
   private buildSlug(title: string, attempt: number) {
