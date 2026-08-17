@@ -4,6 +4,7 @@ import {
   attemptSelectResponse,
   AssessmentQuestionForScoring,
   AttemptMapperInput,
+  QuestionResultInput,
   toAttemptResponse,
 } from './attempt.mapper';
 import { PrismaService } from '@prisma/prisma.service';
@@ -167,12 +168,23 @@ export class AssessmentAttemptService {
       const now = new Date();
       const deadlineAt = this.calcDeadline(attempt.startedAt, Number(attempt.assessment.duration));
 
+      // Attempt is past the deadline — the server scores it as TIMEOUT and
+      // returns the full scored attempt (so the student still sees their result
+      // instead of a 400 that hides the outcome).
       if (now > deadlineAt) {
-        await this.autoTimeoutAttemptInTx(attemptId, tx);
-        throw AppException.badRequest('Attempt time is over, auto-submitted');
+        const scored = await this.autoTimeoutAttemptInTx(attemptId, tx);
+        if (!scored) {
+          throw AppException.conflict('Attempt already submitted or timed out');
+        }
+        const updated = await tx.assessmentAttempt.findUnique({
+          where: { id: attemptId },
+          select: attemptSelectResponse,
+        });
+        if (!updated) throw AppException.notFound('Attempt not found');
+        return toAttemptResponse(updated, deadlineAt, scored.questionResults);
       }
 
-      const score = this.calculateScoreFromAnswers(
+      const { score, questionResults } = this.calculateScoreFromAnswers(
         attempt.answers,
         attempt.assessment.questions ?? [],
       );
@@ -194,12 +206,9 @@ export class AssessmentAttemptService {
         where: { id: attemptId },
         select: attemptSelectResponse,
       });
+      if (!updated) throw AppException.notFound('Attempt not found');
 
-      if (!updated) {
-        throw AppException.notFound('Attempt not found');
-      }
-
-      return toAttemptResponse(updated, deadlineAt);
+      return toAttemptResponse(updated, deadlineAt, questionResults);
     });
   }
 
@@ -250,7 +259,7 @@ export class AssessmentAttemptService {
   private calculateScoreFromAnswers(
     answers: Array<{ optionId: string; option?: { questionId: string } }>,
     questions: AssessmentQuestionForScoring[],
-  ): number {
+  ): { score: number; questionResults: QuestionResultInput[] } {
     const answerMap = new Map<string, Set<string>>();
     for (const a of answers) {
       const questionId = a.option?.questionId;
@@ -264,16 +273,24 @@ export class AssessmentAttemptService {
   private scoreQuestions(
     answerMap: Map<string, Set<string>>,
     questions: AssessmentQuestionForScoring[],
-  ): number {
+  ): { score: number; questionResults: QuestionResultInput[] } {
     let total = 0;
+    const questionResults: QuestionResultInput[] = [];
     for (const q of questions) {
       const selected = answerMap.get(q.id) ?? new Set<string>();
       const correct = new Set(q.options.filter((o) => o.isCorrect).map((o) => o.id));
-      if (selected.size === correct.size && [...correct].every((id) => selected.has(id))) {
-        total += q.score.toNumber();
-      }
+      const isCorrect =
+        selected.size > 0 &&
+        selected.size === correct.size &&
+        [...correct].every((id) => selected.has(id));
+      if (isCorrect) total += q.score.toNumber();
+      questionResults.push({
+        questionId: q.id,
+        correct: isCorrect,
+        correctOptionIds: [...correct],
+      });
     }
-    return total;
+    return { score: total, questionResults };
   }
 
   private async autoTimeoutAttempt(attemptId: string) {
@@ -284,14 +301,17 @@ export class AssessmentAttemptService {
     }
   }
 
-  private async autoTimeoutAttemptInTx(attemptId: string, tx: Prisma.TransactionClient) {
+  private async autoTimeoutAttemptInTx(
+    attemptId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<{ score: number; questionResults: QuestionResultInput[] } | null> {
     const attempt = await tx.assessmentAttempt.findUnique({
       where: { id: attemptId },
       select: attemptSelect,
     });
-    if (!attempt || attempt.status !== AttemptStatus.IN_PROGRESS) return;
+    if (!attempt || attempt.status !== AttemptStatus.IN_PROGRESS) return null;
 
-    const score = this.calculateScoreFromAnswers(
+    const { score, questionResults } = this.calculateScoreFromAnswers(
       attempt.answers,
       attempt.assessment.questions ?? [],
     );
@@ -305,6 +325,7 @@ export class AssessmentAttemptService {
       where: { id: attemptId, status: AttemptStatus.IN_PROGRESS },
       data: { finishedAt: new Date(), score, status: AttemptStatus.TIMEOUT, passed },
     });
+    return { score, questionResults };
   }
 
   private async replaceAnswers(
@@ -316,7 +337,7 @@ export class AssessmentAttemptService {
       where: { attemptId },
     });
     if (newAnswers.length > 0) {
-      await tx.studentAnswer.createMany({ data: newAnswers });
+      await tx.studentAnswer.createMany({ data: newAnswers, skipDuplicates: true });
     }
   }
 

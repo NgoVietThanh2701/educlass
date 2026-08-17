@@ -233,7 +233,16 @@ if (isLoading || isResolving || !detail) {
               <LessonContentRenderer lesson={lessonContent.data} />
             ) : null
           ) : currentItem?.kind === "assessment" ? (
-            <AssessmentContent assessment={currentItem.data} />
+                                    courseId ? (
+              <AssessmentContent
+                courseId={courseId}
+                assessment={currentItem.data}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Đang tải nội dung…
+              </p>
+            )
           ) : (
             <p className="text-sm text-muted-foreground">Đang tải nội dung…</p>
           )}

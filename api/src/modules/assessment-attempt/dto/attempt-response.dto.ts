@@ -9,6 +9,23 @@ export class AttemptAnswerResponseDto {
   optionId: string;
 }
 
+/** Per-question result returned after an attempt is scored (submit/timeout). */
+export class QuestionResultDto {
+  @ApiProperty({ description: 'Question ID' })
+  questionId: string;
+
+  @ApiProperty({
+    description: 'Whether the student answered this question correctly',
+  })
+  correct: boolean;
+
+  @ApiProperty({
+    description: 'IDs of the correct options (client renders review feedback)',
+    type: [String],
+  })
+  correctOptionIds: string[];
+}
+
 export class AttemptResponseDto {
   @ApiProperty()
   id: string;
@@ -32,6 +49,7 @@ export class AttemptResponseDto {
 
   @ApiProperty({
     type: String,
+    description: 'Scheduled end of the attempt (ISO 8601, UTC). Used by the client timer.',
   })
   deadlineAt: string;
 
@@ -42,6 +60,13 @@ export class AttemptResponseDto {
   score: number | null;
 
   @ApiProperty({
+    nullable: true,
+    example: true,
+    description: 'Whether the attempt reached the assessment passing score',
+  })
+  passed: boolean | null;
+
+  @ApiProperty({
     example: 'IN_PROGRESS',
   })
   status: string;
@@ -50,6 +75,12 @@ export class AttemptResponseDto {
     type: [AttemptAnswerResponseDto],
   })
   answers: AttemptAnswerResponseDto[];
+
+  @ApiProperty({
+    type: [QuestionResultDto],
+    description: 'Per-question correctness (only meaningful after submit/timeout)',
+  })
+  questionResults: QuestionResultDto[];
 }
 
 export class AttemptListResponseDto {

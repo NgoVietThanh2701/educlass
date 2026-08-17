@@ -65,6 +65,8 @@ export interface TeacherCourseDetail extends TeacherCourse {
   description?: string | null;
   requirements?: string | null;
   learningOutcomes?: string | null;
+  /** Number of enrolled students (only on the teacher detail endpoint). */
+  studentCount?: number;
 }
 
 /** Filter value used by the course list UI. */

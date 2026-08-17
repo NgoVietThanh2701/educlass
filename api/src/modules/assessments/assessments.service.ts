@@ -38,6 +38,8 @@ export class AssessmentsService {
         shuffleOptions: dto.shuffleOptions ?? false,
         sectionId: dto.sectionId,
         order: (lastAssessment?.order ?? 0) + 1,
+        // New assessments are immediately PUBLISHED (no manual publish step).
+        status: AssessmentStatus.PUBLISHED,
       },
       select: assessmentSelect,
     });
@@ -50,8 +52,8 @@ export class AssessmentsService {
       select: { id: true, status: true, archivedAt: true },
     });
     if (!assessment) throw AppException.notFound('Assessment not found');
-    if (assessment.archivedAt !== null || assessment.status !== AssessmentStatus.DRAFT) {
-      throw AppException.badRequest('Assessment status not DRAFT');
+    if (assessment.archivedAt !== null || assessment.status === AssessmentStatus.ARCHIVED) {
+      throw AppException.badRequest('Assessment status is archived');
     }
 
     const questions = await this.prisma.assessmentQuestion.findMany({
@@ -349,9 +351,9 @@ export class AssessmentsService {
     tx: Prisma.TransactionClient = this.prisma,
   ) {
     const assessment = await this.ensureAssessmentExists(assessmentId, sectionId, tx);
-    if (assessment.archivedAt !== null || assessment.status !== AssessmentStatus.DRAFT) {
+    if (assessment.archivedAt !== null || assessment.status === AssessmentStatus.ARCHIVED) {
       throw AppException.badRequest(
-        'Assessment status not DRAFT',
+        'Assessment status is archived, cannot be edited',
         ErrorCode.BAD_REQUEST_EXAM_STATUS,
       );
     }

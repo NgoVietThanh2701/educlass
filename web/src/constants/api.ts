@@ -17,4 +17,5 @@ export const API_ENDPOINT = {
 
   // assessments
   ASSESSMENT: "/assessments",
+  ATTEMPTS: "/attempts",
 } as const;

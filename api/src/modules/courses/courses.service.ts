@@ -42,6 +42,7 @@ import {
 } from './course.mapper';
 import { CourseTeacherDetailDto } from './dto/course-teacher-detail.dto';
 import { CourseStudentDetailDto } from './dto/course-student-detail.dto';
+import { StudentAssessmentQuizDto } from '@modules/assessments/dto/assessment-student-quiz.dto';
 import { CourseListItemDto } from './dto/course-list-item.dto';
 import { CoursePublicListItemDto } from './dto/course-list-item.dto';
 import { GetPublicCoursesQueryDto } from './dto/get-public-courses-query.dto';
@@ -195,6 +196,9 @@ export class CoursesService {
       where: { id: courseId },
       select: {
         ...courseSelect,
+        _count: {
+          select: { enrollments: true },
+        },
         sections: {
           orderBy: { order: 'asc' },
           select: {
@@ -216,10 +220,11 @@ export class CoursesService {
 
     if (!course) throw AppException.notFound('Course not found');
 
-    const { sections, ...courseData } = course;
+    const { sections, _count, ...courseData } = course;
 
     return {
       ...toCourseResponse(courseData),
+      studentCount: _count.enrollments,
       sections: sections.map((section) => ({
         ...toSectionResponse(section),
         lessons: section.lessons.map(toLessonResponse),
@@ -386,6 +391,56 @@ export class CoursesService {
     };
   }
 
+  async findStudentAssessmentQuiz(
+    courseId: string,
+    assessmentId: string,
+    studentId: string,
+  ): Promise<StudentAssessmentQuizDto> {
+    await this.courseAccess.ensureStudentEnrolled(courseId, studentId);
+    await this.courseAccess.ensurePublishedCourse(courseId);
+
+    const assessment = await this.prisma.assessment.findFirst({
+      where: {
+        id: assessmentId,
+        status: AssessmentStatus.PUBLISHED,
+        archivedAt: null,
+        section: { courseId },
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        duration: true,
+        questions: {
+          orderBy: { order: 'asc' },
+          select: {
+            id: true,
+            content: true,
+            type: true,
+            order: true,
+            options: {
+              orderBy: { order: 'asc' },
+              select: { id: true, content: true, order: true },
+            },
+          },
+        },
+      },
+    });
+
+    // The answer key (`isCorrect`) is intentionally not selected — it must not
+    // leak to the student before/during the attempt.
+    if (!assessment) throw AppException.notFound('Assessment not found');
+
+    return {
+      id: assessment.id,
+      title: assessment.title,
+      description: assessment.description,
+      duration: assessment.duration,
+      questionCount: assessment.questions.length,
+      questions: assessment.questions,
+    };
+  }
+
   async findOne(courseId: string, teacherId: string): Promise<CourseResponseDto> {
     await this.courseAccess.ensureTeacherOwnsCourse(courseId, teacherId);
 
@@ -427,10 +482,36 @@ export class CoursesService {
 
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
-      select: { id: true, status: true, publishedAt: true },
+      select: {
+        id: true,
+        status: true,
+        publishedAt: true,
+        _count: {
+          select: { sections: true, enrollments: true },
+        },
+      },
     });
 
     if (!course) throw AppException.notFound('Course not found');
+
+    // A course with no sections is not publishable — students would join an
+    // empty course.
+    if (status === CourseStatus.PUBLISHED && course._count.sections === 0) {
+      throw AppException.badRequest(
+        'Course must have at least one section before it can be published',
+      );
+    }
+
+    // An already-published course with enrolled students is locked in: returning
+    // it to DRAFT removes it from the public catalog and would orphan the
+    // enrollments (students would lose access to a course they joined).
+    if (
+      course.status === CourseStatus.PUBLISHED &&
+      status === CourseStatus.DRAFT &&
+      course._count.enrollments > 0
+    ) {
+      throw AppException.badRequest('Course cannot be set to draft while it has enrolled students');
+    }
 
     const allowedTransitions: Record<CourseStatus, CourseStatus[]> = {
       [CourseStatus.DRAFT]: [CourseStatus.PUBLISHED, CourseStatus.ARCHIVED],

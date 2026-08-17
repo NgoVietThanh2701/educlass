@@ -13,6 +13,11 @@ export class CourseTeacherSectionDetailDto extends SectionResponseDto {
 }
 
 export class CourseTeacherDetailDto extends CourseResponseDto {
+  @ApiProperty({
+    description: 'Number of students currently enrolled in the course',
+  })
+  studentCount: number;
+
   @ApiProperty({ type: [CourseTeacherSectionDetailDto] })
   sections: CourseTeacherSectionDetailDto[];
 }

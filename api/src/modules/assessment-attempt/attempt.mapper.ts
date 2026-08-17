@@ -65,9 +65,16 @@ export type AttemptMapperInput = Prisma.AssessmentAttemptGetPayload<{
   select: typeof attemptSelectResponse;
 }>;
 
+export type QuestionResultInput = {
+  questionId: string;
+  correct: boolean;
+  correctOptionIds: string[];
+};
+
 export function toAttemptResponse(
   attempt: AttemptMapperInput,
   deadlineAt: Date,
+  questionResults: QuestionResultInput[] = [],
 ): AttemptResponseDto {
   return {
     id: attempt.id,
@@ -75,12 +82,18 @@ export function toAttemptResponse(
     studentId: attempt.studentId,
     startedAt: convertUtcToVietnamTime(attempt.startedAt),
     finishedAt: attempt.finishedAt ? convertUtcToVietnamTime(attempt.finishedAt) : null,
-    deadlineAt: convertUtcToVietnamTime(deadlineAt),
+    deadlineAt: deadlineAt.toISOString(),
     score: attempt.score?.toNumber() ?? null,
+    passed: attempt.passed,
     status: attempt.status,
     answers: attempt.answers.map((a) => ({
       questionId: a.option.questionId,
       optionId: a.optionId,
+    })),
+    questionResults: questionResults.map((q) => ({
+      questionId: q.questionId,
+      correct: q.correct,
+      correctOptionIds: q.correctOptionIds,
     })),
   };
 }

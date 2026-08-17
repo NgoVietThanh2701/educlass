@@ -276,6 +276,21 @@ export default function EditCourseForm({ slug }: { slug: string }) {
     );
   }
 
+  const hasSections = course.sections.length > 0;
+  const hasEnrolledStudents = (course.studentCount ?? 0) > 0;
+
+  // Status constraints (mirror the backend rules so the UI guides the teacher):
+  //  - PUBLISHED is blocked until the course has at least one section.
+  //  - DRAFT is blocked once a published course has enrolled students.
+  const statusOptions = STATUS_OPTIONS.map((opt) => ({
+    ...opt,
+    disabled:
+      (opt.value === "PUBLISHED" && !hasSections) ||
+      (opt.value === "DRAFT" &&
+        course.status === "PUBLISHED" &&
+        hasEnrolledStudents),
+  }));
+
   return (
     <div className="space-y-10">
       {/* Header */}
@@ -297,14 +312,26 @@ export default function EditCourseForm({ slug }: { slug: string }) {
             disabled={changeStatusMutation.isPending}
             className="w-44"
           >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
+            {statusOptions.map((opt) => (
+              <option key={opt.value} value={opt.value} disabled={opt.disabled}>
                 {opt.label}
               </option>
             ))}
           </Select>
         </div>
       </div>
+
+      {!hasSections && (
+        <p className="-mt-6 text-xs text-muted-foreground">
+          Khóa học cần ít nhất 1 phần (section) trước khi có thể xuất bản.
+        </p>
+      )}
+      {course.status === "PUBLISHED" && hasEnrolledStudents && (
+        <p className="-mt-6 text-xs text-muted-foreground">
+          Khóa học đang có {course.studentCount ?? 0} học viên đã đăng ký — không thể
+          chuyển về trạng thái Bản nháp.
+        </p>
+      )}
 
       {error && (
         <div
