@@ -21,6 +21,16 @@ const nextConfig: NextConfig = {
         source: "/api/v1/:path*",
         destination: `${API_ORIGIN}/api/v1/:path*`,
       },
+      // Proxy Socket.IO same-origin in dev so the browser never sees a cross-origin
+      // WS handshake (matches the same-origin `/api/v1/*` pattern above).
+      {
+        source: "/socket.io/:path*",
+        destination: `${API_ORIGIN}/socket.io/:path*`,
+      },
+      { source: "/socket.io", destination: `${API_ORIGIN}/socket.io` },
+      // The engine.io handshake path is `/socket.io/` (trailing slash); the two
+      // rules above don't match it, so handle that exact path explicitly.
+      { source: "/socket.io/", destination: `${API_ORIGIN}/socket.io/` },
     ];
   },
 };

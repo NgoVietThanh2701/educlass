@@ -4,9 +4,16 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppConfig } from '@common/constants/app-config.constant';
 import cookieParser from 'cookie-parser';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Use the Socket.IO adapter so @WebSocketGateway (namespace `chat`, engine
+  // path `/socket.io/`) is served by the same HTTP server. Without this Nest
+  // falls back to the `ws`-based WsAdapter, the `/socket.io` engine endpoint
+  // does not exist, and the socket.io-client can never connect.
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   // Set global prefix for all routes
   app.setGlobalPrefix('api/v1');

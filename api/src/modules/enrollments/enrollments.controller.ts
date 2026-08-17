@@ -43,7 +43,9 @@ export class EnrollmentsController {
   @Get('me/progress')
   @RolesUser(RoleUser.STUDENT)
   @SuccessMessage('Retrieved my course progress successfully')
-  @ApiOperation({ summary: 'Get aggregated learning progress for all enrolled courses (Only Student)' })
+  @ApiOperation({
+    summary: 'Get aggregated learning progress for all enrolled courses (Only Student)',
+  })
   @ApiResponse({ status: 200, type: CourseProgressResponseDto, isArray: true })
   getMyCourseProgress(@CurrentUser('id') studentId: string) {
     return this.enrollmentsService.getMyCourseProgress(studentId);

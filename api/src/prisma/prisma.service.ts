@@ -1,6 +1,8 @@
 import { SequenceName } from '@modules/auth/auth.constants';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Interval } from '@nestjs/schedule';
 import { PrismaPg } from '@prisma/adapter-pg';
+import type { PoolConfig } from 'pg';
 import { Prisma, PrismaClient } from '@prisma/client';
 
 @Injectable()
@@ -17,15 +19,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     // `Invalid ...findUnique() invocation`). Bounding the pool + short timeouts
     // make those failures fail fast and get replaced by a fresh connection on the
     // next retry (the frontend already retries transient errors for these pages).
-    const pgConfig: ConstructorParameters<typeof PrismaPg>[0] & {
-      max?: number;
-      connectionTimeoutMillis?: number;
-      idleTimeoutMillis?: number;
-      keepAlive?: boolean;
-    } = {
+    const pgConfig: PoolConfig = {
       connectionString: process.env.DATABASE_URL,
       max: 5,
-      connectionTimeoutMillis: 10_000,
+      // Generous enough to survive a Neon cold-start (the serverless compute
+      // pauses after ~5min of inactivity and the wake-up can take several
+      // seconds, occasionally >10s). With 10s it failed with
+      // "Connection terminated due to connection timeout".
+      connectionTimeoutMillis: 30_000,
       idleTimeoutMillis: 60_000,
       keepAlive: true,
     };
@@ -35,8 +36,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         this.logger.warn(
           `Database connection error (will replace dead connection): ${err.message}`,
         ),
-      onPoolError: (err) =>
-        this.logger.warn(`Database pool error: ${err.message}`),
+      onPoolError: (err) => this.logger.warn(`Database pool error: ${err.message}`),
     });
 
     super({
@@ -51,6 +51,23 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     // likely to be killed by the serverless DB while still connecting).
     await this.$connect();
     this.logger.log('Database connected successfully!');
+    await this.keepDbWarm();
+  }
+
+  /**
+   * Neon (and other serverless Postgres) pause their compute after a short idle
+   * period, so the next connection pays a multi-second cold-start that can
+   * exceed every reasonable timeout and break realtime flows (e.g. the Socket.IO
+   * handshake verifies the JWT by querying the DB). A lightweight `SELECT 1`
+   * every 60s keeps the database awake while the API is running.
+   */
+  @Interval(60_000)
+  private async keepDbWarm() {
+    try {
+      await this.$queryRaw`SELECT 1`;
+    } catch (err) {
+      this.logger.warn(`Database keep-alive ping failed (will retry): ${(err as Error).message}`);
+    }
   }
 
   async onModuleDestroy() {

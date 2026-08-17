@@ -12,14 +12,23 @@ import { Server } from 'socket.io';
 import { MessageService } from './services/message.service';
 import type { AuthenticatedSocket, JwtPayload } from '@common/interfaces/auth-user.interface';
 import { SendMessageDto } from './dto/send-message.dto';
-import { AppConfig } from '@common/constants/app-config.constant';
 import { ConversationService } from './services/conversation.service';
 import { JwtService } from '@nestjs/jwt';
 import { AuthValidationService } from '@modules/auth/auth-validation.service';
 import { Logger } from '@nestjs/common';
 import { AppException } from '@common/exceptions/app.exception';
 
-@WebSocketGateway({ namespace: 'chat', cors: { origin: AppConfig.APP_URL, credentials: true } })
+// Dev-friendly CORS for the Socket.IO server: `origin: true` reflects ANY
+// request origin (localhost / 127.0.0.1 / LAN IP the browser uses), otherwise
+// engine.io rejects the cross-origin WebSocket/polling handshake with
+// "WebSocket is closed before the connection is established". Tighten this when
+// deploying (e.g. an explicit allow-list) via the SOCKET_ORIGINS env.
+const SOCKET_SERVER_CORS = { origin: true, credentials: true };
+
+@WebSocketGateway({
+  namespace: 'chat',
+  cors: SOCKET_SERVER_CORS,
+})
 export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);
   @WebSocketServer()
@@ -80,11 +89,16 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       client.user.id,
     );
     if (!isParticipant) {
+      this.logger.warn(
+        `Join DENIED: user ${client.user.id} is not a participant of ${data.conversationId}`,
+      );
       throw AppException.wsException('You are not a participant of this conversation');
     }
 
-    await client.join(`conversation:${data.conversationId}`);
+    const room = `conversation:${data.conversationId}`;
+    await client.join(room);
     client.emit('joined', { conversationId: data.conversationId });
+    this.logger.log(`Joined room ${room} (client ${client.id}, user ${client.user.id})`);
   }
 
   @SubscribeMessage('sendMessage')
@@ -93,6 +107,21 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     @MessageBody() dto: SendMessageDto,
   ) {
     const message = await this.messageService.sendMessage(client.user.id, dto);
-    this.server.to(`conversation:${dto.conversationId}`).emit('newMessage', message);
+    this.emitNewMessage(dto.conversationId, message);
+  }
+
+  /**
+   * Broadcast a newly created message to all sockets currently joined to the
+   * conversation room. Used by BOTH the socket `sendMessage` handler and the
+   * REST `POST /conversations/:id/messages` path so sending is always realtime
+   * regardless of the transport the client used.
+   */
+  emitNewMessage(conversationId: string, message: unknown) {
+    // MUST NOT throw: this runs inside the REST send path, so a failed
+    // broadcast must never break message creation.
+    this.logger.log(
+      `emit newMessage -> conversation:${conversationId} (message id: ${(message as { id?: string })?.id})`,
+    );
+    this.server?.to(`conversation:${conversationId}`).emit('newMessage', message);
   }
 }

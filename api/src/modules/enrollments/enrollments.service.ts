@@ -4,10 +4,14 @@ import { CourseStatus, EnrollmentStatus } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
 import { buildCourseProgressPayload } from '@common/utils/course-progress.util';
 import { enrollmentSelect, toEnrollmentResponse } from './enrollment.mapper';
+import { ConversationService } from '@modules/chat/services/conversation.service';
 
 @Injectable()
 export class EnrollmentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly conversationService: ConversationService,
+  ) {}
 
   async enroll(courseId: string, studentId: string) {
     const course = await this.prisma.course.findUnique({
@@ -43,6 +47,12 @@ export class EnrollmentsService {
       },
       select: enrollmentSelect,
     });
+
+    // Keep the per-course group conversation in sync: if the teacher has
+    // already opened the group, the new student is added as a participant so
+    // they immediately see the conversation. If the group does not exist yet,
+    // it will be seeded with this student when the teacher creates it.
+    await this.conversationService.addUserToGroupChat(courseId, studentId);
 
     return toEnrollmentResponse(enrollment);
   }

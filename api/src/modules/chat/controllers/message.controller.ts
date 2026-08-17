@@ -14,6 +14,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiFileUploadBody } from '@common/swagger/file-upload.swagger';
 import { MessageService } from '../services/message.service';
 import { AttachmentService } from '@common/services/attachment.service';
+import { ChatGateway } from '../chat.gateway';
 import { SendMessageDto } from '../dto/send-message.dto';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
@@ -30,17 +31,25 @@ export class MessageController {
   constructor(
     private readonly messageService: MessageService,
     private readonly attachmentService: AttachmentService,
+    private readonly chatGateway: ChatGateway,
   ) {}
 
   @Post(':convId/messages')
   @RelaxedThrottle()
   @ApiOperation({ summary: 'Send a message to a conversation' })
-  sendMessage(
+  async sendMessage(
     @Param('convId') convId: string,
     @CurrentUser('id') userId: string,
     @Body() dto: Omit<SendMessageDto, 'conversationId'>,
   ) {
-    return this.messageService.sendMessage(userId, { ...dto, conversationId: convId });
+    const message = await this.messageService.sendMessage(userId, {
+      ...dto,
+      conversationId: convId,
+    });
+    // Emit the same `newMessage` socket event the WS `sendMessage` handler does,
+    // so the other participant(s) see the message in real time.
+    this.chatGateway.emitNewMessage(convId, message);
+    return message;
   }
 
   @Get(':convId/messages')

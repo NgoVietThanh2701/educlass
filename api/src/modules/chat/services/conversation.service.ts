@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ConversationType, GroupMessagePermission } from '@prisma/client';
+import { ConversationType, CourseStatus, GroupMessagePermission } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
 import { conversationSelect, toConversationResponse } from '../mappers/conversation.mapper';
 import { AppException } from '@common/exceptions/app.exception';
@@ -99,12 +99,74 @@ export class ConversationService {
   }
 
   async getConversationsForUser(userId: string) {
+    // A GET must stay cheap: instead of running `createOrGetGroup` (N+1 writes)
+    // for every course on every visit, we only materialise the groups that are
+    // actually missing, then make sure the caller is a participant of the ones
+    // that already exist. Steady state is a handful of indexed reads.
+    const [ownedCourses, enrollments] = await Promise.all([
+      this.prisma.course.findMany({
+        where: { teacherId: userId, status: CourseStatus.PUBLISHED },
+        select: { id: true },
+      }),
+      this.prisma.enrollment.findMany({
+        where: { studentId: userId },
+        select: { courseId: true },
+      }),
+    ]);
+
+    const courseIds = Array.from(
+      new Set([...ownedCourses.map((c) => c.id), ...enrollments.map((e) => e.courseId)]),
+    );
+
+    if (courseIds.length > 0) {
+      const existing = await this.prisma.conversation.findMany({
+        where: { courseId: { in: courseIds } },
+        select: { id: true, courseId: true },
+      });
+      const existingByCourseId = new Set(existing.map((c) => c.courseId));
+
+      // Create only the groups that do not exist yet (one-time, in parallel).
+      const missing = courseIds.filter((courseId) => !existingByCourseId.has(courseId));
+      await Promise.all(missing.map((courseId) => this.createOrGetGroup(courseId, userId)));
+
+      // Ensure the caller is a participant of already-existing course groups
+      // (e.g. a student who joined after the group was opened by the teacher).
+      await this.ensureUserInCourseGroups(
+        userId,
+        existing.map((c) => c.id),
+      );
+    }
+
     const convs = await this.prisma.conversation.findMany({
       where: { participants: { some: { userId } } },
       orderBy: { updatedAt: 'desc' },
       select: conversationSelect,
     });
     return convs.map(toConversationResponse);
+  }
+
+  /** Upserts the user into every course group where they are not yet a member. */
+  private async ensureUserInCourseGroups(userId: string, conversationIds: string[]) {
+    if (conversationIds.length === 0) return;
+
+    const memberships = await this.prisma.participant.findMany({
+      where: { userId, conversationId: { in: conversationIds } },
+      select: { conversationId: true },
+    });
+    const memberOf = new Set(memberships.map((m) => m.conversationId));
+    const missing = conversationIds.filter((convId) => !memberOf.has(convId));
+
+    await Promise.all(
+      missing.map((conversationId) =>
+        this.prisma.participant.upsert({
+          where: {
+            conversationId_userId: { conversationId, userId },
+          },
+          create: { conversationId, userId },
+          update: {},
+        }),
+      ),
+    );
   }
 
   async findOne(convId: string, userId: string) {

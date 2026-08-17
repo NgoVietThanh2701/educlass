@@ -9,7 +9,6 @@ import {
   Plus,
   FolderOpen,
   Inbox,
-  Send,
 } from "lucide-react";
 
 export type NavItem = {
@@ -52,14 +51,13 @@ export const getNavItems = (role: string | undefined): NavItem[] => {
       ],
     },
     {
-      // Chat entry shared by both roles — the Chat UI routes all conversations
-      // through the same inbox/compose surfaces (built next).
+      // Chat entry shared by both roles — group conversations per course live
+      // in the Inbox. (Direct / 1:1 compose is deferred to a later iteration.)
       name: "Messages",
       icon: <MessageSquare />,
       path: ROUTES.MESSAGE_INBOX,
       subItems: [
         { name: "Inbox", path: ROUTES.MESSAGE_INBOX, icon: <Inbox /> },
-        { name: "Compose", path: ROUTES.MESSAGE_COMPOSE, icon: <Send /> },
       ],
     },
   ];

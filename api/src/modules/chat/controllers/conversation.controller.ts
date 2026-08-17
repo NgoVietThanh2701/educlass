@@ -4,6 +4,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagg
 import { RoleUser } from '@prisma/client';
 import { ConversationService } from '../services/conversation.service';
 import { CreateDirectConversationDto } from '../dto/create-direct-conversation.dto';
+import { CreateGroupConversationDto } from '../dto/create-group-conversation.dto';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { RolesUser } from '@common/decorators/roles.decorator';
 import { UpdatePermissionDto } from '../dto/update-permission.dto';
@@ -32,11 +33,12 @@ export class ConversationController {
     return this.conversationService.createOrGetDirect(userId, dto.targetUserId);
   }
 
-  // @Post('group')
-  // @ApiOperation({ summary: 'Create or get a group conversation for a course' })
-  // createGroup(@CurrentUser('id') userId: string, @Body() dto: CreateGroupConversationDto) {
-  //   return this.conversationService.createOrGetGroup(dto.courseId, userId);
-  // }
+  @Post('group')
+  @ModerateThrottle()
+  @ApiOperation({ summary: 'Create or get a group conversation for a course' })
+  createGroup(@CurrentUser('id') userId: string, @Body() dto: CreateGroupConversationDto) {
+    return this.conversationService.createOrGetGroup(dto.courseId, userId);
+  }
 
   @Get()
   @ApiOperation({ summary: 'Get all conversations for current user' })
