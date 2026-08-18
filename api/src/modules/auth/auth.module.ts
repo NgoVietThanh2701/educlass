@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthValidationService } from './auth-validation.service';
+import { GoogleOAuthController } from './google-oauth.controller';
+import { GoogleOAuthService } from './google-oauth.service';
 import { ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
@@ -23,8 +25,14 @@ import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
     OtpModule,
     UsersModule,
   ],
-  controllers: [AuthController],
-  providers: [AuthService, AuthValidationService, JwtStrategy, RefreshTokenStrategy],
+  controllers: [AuthController, GoogleOAuthController],
+  providers: [
+    AuthService,
+    AuthValidationService,
+    GoogleOAuthService,
+    JwtStrategy,
+    RefreshTokenStrategy,
+  ],
   exports: [AuthValidationService, JwtModule],
 })
 export class AuthModule {}

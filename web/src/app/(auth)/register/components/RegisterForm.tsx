@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Select } from "@/components/ui/select";
 import { ROUTES } from "@/constants/routes";
+import { API_ENDPOINT } from "@/constants/api";
 import { useRegister } from "@/features/auth/hooks/use-register";
 import {
   registerSchema,
@@ -162,7 +163,7 @@ export default function RegisterForm() {
 
       {/* Google */}
       <a
-        href="#"
+        href={`/api/v1${API_ENDPOINT.GOOGLE_AUTH}`}
         className="flex w-full items-center justify-center gap-2.5 rounded-md border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-900 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-neutral-600 dark:bg-neutral-700 dark:text-slate-50 dark:hover:bg-neutral-600"
       >
         {/* SVG Google giữ nguyên như code của bạn */}

@@ -6,6 +6,8 @@ export const API_ENDPOINT = {
   RESEND_OTP: "/auth/register/resend-verification",
   LOGOUT: "/auth/logout",
   REFRESH: "/auth/refresh",
+  // GET (browser redirect to Google OAuth consent screen).
+  GOOGLE_AUTH: "/auth/google",
 
   // courses
   COURSE_SECTIONS: "/courses", // base path; sections live at /courses/:courseId/sections (teacher)

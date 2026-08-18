@@ -132,7 +132,13 @@ export class AuthService {
       },
     });
 
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    if (!user) throw AppException.unauthorized('Invalid credentials');
+    if (!user.passwordHash) {
+      throw AppException.unauthorized(
+        'This account was created with Google. Please sign in with Google.',
+      );
+    }
+    if (!(await bcrypt.compare(password, user.passwordHash))) {
       throw AppException.unauthorized('Invalid credentials');
     }
 
@@ -163,6 +169,10 @@ export class AuthService {
       throw AppException.notFound('User not found');
     }
 
+    if (!user.passwordHash) {
+      throw AppException.badRequest('This account was created with Google and has no password.');
+    }
+
     const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
 
     if (isSamePassword) {
@@ -188,8 +198,8 @@ export class AuthService {
     });
   }
 
-  // =============== private function
-  private async generateTokens(
+  // =============== shared helpers (also used by Google OAuth) ===============
+  async generateTokens(
     userId: string,
     userName: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
@@ -208,7 +218,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  private async updateRefreshToken(userId: string, refreshToken: string): Promise<void> {
+  async updateRefreshToken(userId: string, refreshToken: string): Promise<void> {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, SALT_ROUNDS);
     await this.prisma.user.update({
       where: { id: userId },

@@ -4,12 +4,16 @@ import { GoogleIcon } from "@/components/icons";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
+import { API_ENDPOINT } from "@/constants/api";
 import { useLogin } from "@/features/auth/hooks/use-login";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { loginSchema, type LoginFormValues } from "@/features/auth/schemas/login.schema";
+import {
+  loginSchema,
+  type LoginFormValues,
+} from "@/features/auth/schemas/login.schema";
 import { FormInput } from "@/components/forms/form-input";
 import { FormPassword } from "@/components/forms/form-password";
 import { getErrorMessage } from "@/lib/error-message";
@@ -118,7 +122,7 @@ export default function LoginForm() {
 
       {/* Google */}
       <a
-        href="#"
+        href={`/api/v1${API_ENDPOINT.GOOGLE_AUTH}`}
         className="flex w-full items-center justify-center gap-2.5 rounded-md border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-900 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-neutral-600 dark:bg-neutral-700 dark:text-slate-50 dark:hover:bg-neutral-600"
       >
         {/* SVG Google giữ nguyên như code của bạn */}

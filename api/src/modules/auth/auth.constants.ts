@@ -18,3 +18,16 @@ export const REFRESH_TOKEN_COOKIE_OPTIONS = {
   // exposing the refresh token on unrelated data endpoints (`/users/me`, ...).
   path: '/api/v1/auth',
 };
+
+// One-time `state` (CSRF) cookie for the Google OAuth redirect round-trip.
+export const GOOGLE_OAUTH_STATE_COOKIE = 'google_oauth_state';
+
+export const GOOGLE_OAUTH_STATE_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  // Lax (NOT strict): the cookie must be delivered on the cross-site
+  // top-level navigation FROM accounts.google.com back to the app.
+  sameSite: 'lax' as const,
+  maxAge: 10 * 60 * 1000, // 10 minutes — the flow should finish in seconds
+  path: '/',
+};

@@ -5,6 +5,9 @@ CREATE TYPE "RoleManager" AS ENUM ('ADMIN', 'MANAGER');
 CREATE TYPE "RoleUser" AS ENUM ('STUDENT', 'TEACHER');
 
 -- CreateEnum
+CREATE TYPE "AuthProvider" AS ENUM ('EMAIL', 'GOOGLE');
+
+-- CreateEnum
 CREATE TYPE "CourseStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
 
 -- CreateEnum
@@ -52,7 +55,9 @@ CREATE TABLE "users" (
     "email" TEXT NOT NULL,
     "userName" TEXT NOT NULL,
     "fullName" TEXT NOT NULL,
-    "passwordHash" TEXT NOT NULL,
+    "passwordHash" TEXT,
+    "provider" "AuthProvider" NOT NULL DEFAULT 'EMAIL',
+    "googleId" TEXT,
     "balance" DECIMAL(10,2) NOT NULL DEFAULT 0,
     "role" "RoleUser" NOT NULL DEFAULT 'STUDENT',
     "refreshToken" TEXT,
@@ -288,6 +293,9 @@ CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_userName_key" ON "users"("userName");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_googleId_key" ON "users"("googleId");
 
 -- CreateIndex
 CREATE INDEX "users_role_idx" ON "users"("role");
