@@ -5,11 +5,19 @@ import Redis from 'ioredis';
 export const RedisProvider: Provider = {
   provide: 'REDIS_CLIENT',
   useFactory: (configService: ConfigService) => {
+    const isProduction = configService.get('NODE_ENV') === 'production';
+
     const logger = new Logger('RedisProvider');
     const redisInstance = new Redis({
       host: configService.getOrThrow('REDIS_HOST'),
       port: Number(configService.getOrThrow('REDIS_PORT')),
       db: Number(configService.getOrThrow('REDIS_DB')),
+
+      ...(isProduction && {
+        password: configService.getOrThrow('REDIS_PASSWORD'),
+        tls: {},
+      }),
+
       retryStrategy(times) {
         // Retry sau mỗi 2 giây, tối đa 10 lần
         if (times > 10) {

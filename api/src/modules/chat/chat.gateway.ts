@@ -17,16 +17,11 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthValidationService } from '@modules/auth/auth-validation.service';
 import { Logger } from '@nestjs/common';
 import { AppException } from '@common/exceptions/app.exception';
-
-// Explicit CORS allow-list shared by REST (main.ts) and Socket.IO. Configure once
-// via the `ALLOWED_ORIGINS` env (comma-separated); defaults cover local dev.
-const SOCKET_ALLOWED_ORIGINS = (
-  process.env.ALLOWED_ORIGINS?.split(',') ?? ['http://localhost:3000', 'http://127.0.0.1:3000']
-).map((origin) => origin.trim());
+import { AppConfig } from '@common/constants/app-config.constant';
 
 @WebSocketGateway({
   namespace: 'chat',
-  cors: { origin: SOCKET_ALLOWED_ORIGINS, credentials: true },
+  cors: { origin: [process.env.ALLOWED_ORIGINS ?? AppConfig.APP_URL], credentials: true },
 })
 export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);

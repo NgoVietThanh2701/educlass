@@ -55,7 +55,7 @@ export class GoogleOAuthController {
     // the cookie is scoped to the web host → F5/logout/refresh all work as usual.
     res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, getRefreshTokenCookieOptions());
 
-    const appUrl = this.configService.get('APP_URL') ?? AppConfig.APP_URL;
+    const appUrl = this.configService.get('ALLOWED_ORIGINS') ?? AppConfig.APP_URL;
     return res.redirect(`${appUrl}/oauth/callback`);
   }
 }
