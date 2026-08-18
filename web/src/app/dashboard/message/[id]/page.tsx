@@ -11,7 +11,10 @@ export default function MessageThreadPage() {
 
   return (
     <div className="flex h-full overflow-hidden">
-      <aside className="flex w-72 shrink-0 flex-col border-r border-border">
+      {/* Conversation list: hidden below `md` so mobile/tablet-portrait get a
+          single full-width chat panel (the header back button returns to the
+          inbox). */}
+      <aside className="hidden w-56 shrink-0 flex-col border-r border-border md:flex lg:w-72">
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold text-muted-foreground">
             Hộp thư

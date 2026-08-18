@@ -67,7 +67,7 @@ export function MessageComposer({ onSend, disabled }: Props) {
     setFiles((prev) => prev.filter((f) => f.id !== id));
 
   return (
-    <div className="flex flex-col gap-2 border-t border-border p-3">
+    <div className="flex flex-col gap-2 border-t border-border p-2 md:p-3">
       {files.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {files.map((f) => (

@@ -59,14 +59,6 @@ export function ConversationView() {
     joinConversationRoom(socket, id);
 
     const onNewMessage = (msg: Message) => {
-      console.debug(
-        "[chat] ConversationView newMessage:",
-        msg.id,
-        "conv=",
-        msg.conversationId,
-        "expected=",
-        id,
-      );
       if (msg.conversationId !== id) return;
       setLive((prev) =>
         prev.some((m) => m.id === msg.id) ? prev : [...prev, msg],

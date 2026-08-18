@@ -49,7 +49,7 @@ export function ConversationHeader({
         <Button
           variant="ghost"
           size="icon"
-          className="lg:hidden"
+          className="md:hidden"
           aria-label="Quay lại"
           onClick={() => {
             window.history.back();
@@ -87,7 +87,7 @@ export function ConversationHeader({
         <Button
           variant="outline"
           size="sm"
-          className="gap-1.5 text-xs"
+          className="shrink-0 gap-1.5 text-xs"
           onClick={togglePermission}
           disabled={updatePermission.isPending}
         >

@@ -41,22 +41,7 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
 
     const sock = initChatSocket(accessToken);
 
-    // --- diagnostic (temporary) ---
-    sock.on("connect", () =>
-      console.log("[chat-socket] connected id=" + sock.id),
-    );
-    sock.on("connect_error", (e) =>
-      console.error("[chat-socket] connect_error:", e?.message ?? e),
-    );
-    // --- end diagnostic ---
-
     const onNewMessage = (message: Message) => {
-      console.debug(
-        "[chat-socket] newMessage received:",
-        message.id,
-        "conv=",
-        message.conversationId,
-      );
       chatUiStore.getState().receiveMessage(message);
     };
     sock.on("newMessage", onNewMessage);

@@ -23,7 +23,10 @@ export function MessageList({ messages, currentUserId }: Props) {
   let lastDate = "";
 
   return (
-    <div ref={listRef} className="flex-1 space-y-1 overflow-y-auto px-4 py-4">
+    <div
+      ref={listRef}
+      className="flex-1 space-y-1 overflow-y-auto px-3 py-4 md:px-4"
+    >
       {messages.length === 0 ? (
         <div className="h-full" />
       ) : (

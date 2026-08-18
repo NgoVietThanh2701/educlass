@@ -42,7 +42,7 @@ export function MessageItem({ message, isMine }: Props) {
 
       <div
         className={cn(
-          "max-w-[72%] rounded-2xl px-3.5 py-2 text-sm",
+          "max-w-[85%] rounded-2xl px-3.5 py-2 text-sm sm:max-w-[72%]",
           isMine
             ? "bg-primary text-primary-foreground"
             : "bg-muted text-foreground",

@@ -9,6 +9,10 @@ import { IoAdapter } from '@nestjs/platform-socket.io';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Graceful shutdown for k8s / process managers: drains in-flight requests,
+  // closes the DB pool / adapters, then exits cleanly on SIGTERM/SIGINT.
+  app.enableShutdownHooks();
+
   // Use the Socket.IO adapter so @WebSocketGateway (namespace `chat`, engine
   // path `/socket.io/`) is served by the same HTTP server. Without this Nest
   // falls back to the `ws`-based WsAdapter, the `/socket.io` engine endpoint
@@ -20,6 +24,14 @@ async function bootstrap() {
 
   // Use cookie parser middleware
   app.use(cookieParser());
+
+  // Behind a reverse proxy (nginx / cloud LB), trust the configured number of
+  // proxy hops so ThrottlerGuard/rate-limits see the real client IP instead of
+  // the proxy's. 0 = disabled (direct exposure), which is the dev default.
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .set('trust proxy', Number(process.env.TRUST_PROXY ?? 0));
 
   // Set Global validation
   app.useGlobalPipes(
@@ -35,61 +47,66 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? AppConfig.APP_URL,
+    origin: process.env.ALLOWED_ORIGINS?.split(',')?.map((o) => o.trim()) ?? AppConfig.APP_URL,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
   /*
-    Setup Swagger docs 
+    Swagger docs - enabled in dev by default; in production only when
+    SWAGGER_ENABLED=true is explicitly set (never expose API docs by default).
   */
-  const config = new DocumentBuilder()
-    .setTitle('API Educlass Documentation')
-    .setDescription('API documentation for the Education class application')
-    .setVersion('1.0')
-    // .addTag('auth', 'Authentication related endpoints')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Enter JWT token',
-        in: 'header',
-      },
-      'JWT-auth',
-    )
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Refresh-JWT',
-        description: 'Enter refresh JWT token',
-        in: 'header',
-      },
-      'JWT-refresh',
-    )
-    .addServer('http://localhost:5000', 'Development server')
-    .build();
+  const swaggerEnabled =
+    process.env.NODE_ENV !== 'production' || process.env.SWAGGER_ENABLED === 'true';
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-      tagsSorter: 'alpha',
-      operationsSorter: 'alpha',
-    },
-    customSiteTitle: 'API Documentation',
-    customfavIcon: 'https://nestjs.com/img/logo-small.svg',
-    customCss: `
+  if (swaggerEnabled) {
+    const config = new DocumentBuilder()
+      .setTitle('API Educlass Documentation')
+      .setDescription('API documentation for the Education class application')
+      .setVersion('1.0')
+      // .addTag('auth', 'Authentication related endpoints')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'JWT',
+          description: 'Enter JWT token',
+          in: 'header',
+        },
+        'JWT-auth',
+      )
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'Refresh-JWT',
+          description: 'Enter refresh JWT token',
+          in: 'header',
+        },
+        'JWT-refresh',
+      )
+      .addServer('http://localhost:5000', 'Development server')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'alpha',
+      },
+      customSiteTitle: 'API Documentation',
+      customfavIcon: 'https://nestjs.com/img/logo-small.svg',
+      customCss: `
       .swagger-ui .topbar {display: none;}
       .swagger-ui .info {margin: 50px 0;}
       .swagger-ui .info .title {color: #4A90E2}
       `,
-  });
-
+    });
+  }
   // Node closes keep-alive sockets after only 5 seconds by default, while the
   // Next.js dev proxy holds upstream sockets in its pool much longer. When the
   // proxy reuses a socket the backend already closed, the request dies with
