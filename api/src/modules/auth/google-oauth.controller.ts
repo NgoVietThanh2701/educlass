@@ -10,7 +10,7 @@ import {
   GOOGLE_OAUTH_STATE_COOKIE,
   GOOGLE_OAUTH_STATE_COOKIE_OPTIONS,
   REFRESH_TOKEN_COOKIE,
-  REFRESH_TOKEN_COOKIE_OPTIONS,
+  getRefreshTokenCookieOptions,
 } from './auth.constants';
 
 @ApiTags('Auth')
@@ -53,7 +53,7 @@ export class GoogleOAuthController {
     // Same refresh-cookie mechanism as password login. Because the request
     // arrives through the Next.js proxy (GOOGLE_CALLBACK_URL is the web origin),
     // the cookie is scoped to the web host → F5/logout/refresh all work as usual.
-    res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+    res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, getRefreshTokenCookieOptions());
 
     const appUrl = this.configService.get('APP_URL') ?? AppConfig.APP_URL;
     return res.redirect(`${appUrl}/oauth/callback`);

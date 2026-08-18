@@ -12,7 +12,7 @@ import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import type { Response } from 'express';
-import { REFRESH_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE_OPTIONS } from './auth.constants';
+import { REFRESH_TOKEN_COOKIE, getRefreshTokenCookieOptions } from './auth.constants';
 
 @Controller('auth')
 export class AuthController {
@@ -75,7 +75,7 @@ export class AuthController {
   ): Promise<AuthResponseDto> {
     const result = await this.authService.verifyOtpRegister(verifyDto);
 
-    response.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+    response.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, getRefreshTokenCookieOptions());
 
     return {
       accessToken: result.accessToken,
@@ -132,7 +132,7 @@ export class AuthController {
   ): Promise<AuthResponseDto> {
     const result = await this.authService.login(loginDto);
 
-    response.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+    response.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, getRefreshTokenCookieOptions());
 
     return {
       accessToken: result.accessToken,
@@ -169,7 +169,7 @@ export class AuthController {
   ): Promise<AuthResponseDto> {
     const result = await this.authService.refreshTokens(userId);
 
-    response.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+    response.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, getRefreshTokenCookieOptions());
 
     return {
       accessToken: result.accessToken,
@@ -228,6 +228,6 @@ export class AuthController {
   ): Promise<void> {
     await this.authService.logout(userId);
 
-    response.clearCookie(REFRESH_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE_OPTIONS);
+    response.clearCookie(REFRESH_TOKEN_COOKIE, getRefreshTokenCookieOptions());
   }
 }

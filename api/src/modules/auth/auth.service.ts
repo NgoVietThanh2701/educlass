@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -21,6 +21,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
@@ -65,7 +67,7 @@ export class AuthService {
 
       return toUserResponse(user);
     } catch (error) {
-      console.error('Error during registration:', error);
+      this.logger.error('Error during registration:', (error as Error).stack ?? error);
       throw AppException.internal('An error occurred during registration. Please try again later.');
     }
   }

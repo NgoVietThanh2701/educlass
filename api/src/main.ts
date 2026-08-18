@@ -5,6 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppConfig } from '@common/constants/app-config.constant';
 import cookieParser from 'cookie-parser';
 import { IoAdapter } from '@nestjs/platform-socket.io';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,6 +13,11 @@ async function bootstrap() {
   // Graceful shutdown for k8s / process managers: drains in-flight requests,
   // closes the DB pool / adapters, then exits cleanly on SIGTERM/SIGINT.
   app.enableShutdownHooks();
+
+  // Security headers (X-Frame-Options, nosniff, HSTS, ...). CSP is disabled:
+  // this is a JSON API (CSP matters for HTML pages, and it would break the
+  // Swagger UI in dev).
+  app.use(helmet({ contentSecurityPolicy: false }));
 
   // Use the Socket.IO adapter so @WebSocketGateway (namespace `chat`, engine
   // path `/socket.io/`) is served by the same HTTP server. Without this Nest
