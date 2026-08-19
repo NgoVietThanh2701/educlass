@@ -25,7 +25,6 @@ export class MailService implements OnModuleInit {
       this.logger.log('SMTP connection established successfully.');
     } catch (err) {
       this.logger.error('SMTP verification failed.', err);
-      throw err;
     }
   }
 

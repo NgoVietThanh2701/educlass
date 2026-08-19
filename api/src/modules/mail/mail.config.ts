@@ -7,6 +7,7 @@ export const mailConfig = (config: ConfigService) => ({
     host: config.getOrThrow('MAIL_HOST'),
     port: Number(config.getOrThrow('MAIL_PORT')),
     secure: config.getOrThrow('MAIL_SECURE') === 'true', // true cho 465
+    family: 4,
     pool: true,
     maxConnections: 5,
     auth: {
