@@ -27,6 +27,6 @@
     "noFallthroughCasesInSwitch": false,
     // user added
     "strictPropertyInitialization": false,
-    "types": ["node", "multer"]
+    "types": ["node", "express", "multer"]
   }
 }
