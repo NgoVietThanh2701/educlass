@@ -19,7 +19,7 @@ type VerifyCallback = (err: Error | null, ok?: boolean) => void;
  * which shows up as `Connection timeout` / ETIMEDOUT, while HTTPS (443) stays
  * open — so an HTTP API transport is the reliable path for email delivery.
  * Implements nodemailer's custom-transport contract (`send` + optional
- * `verify`), so `@nestjs-modules/mailer` (templates, `sendMail`) keeps working.
+ * `verify`) and ALSO supports promise-style calls (`await transporter.verify()`).
  */
 export function createResendTransport(config: ConfigService) {
   const apiKey = config.getOrThrow<string>('RESEND_API_KEY');
@@ -35,37 +35,53 @@ export function createResendTransport(config: ConfigService) {
       body: body ? JSON.stringify(body) : undefined,
     });
 
+  /** Resolves a promise and also notifies a callback when one is supplied. */
+  const settle = <T>(
+    promise: Promise<T>,
+    callback?: (err: Error | null, value?: T) => void,
+  ): Promise<T> => {
+    if (typeof callback === 'function') {
+      promise.then(
+        (value) => callback(null, value),
+        (err: Error) => callback(err),
+      );
+    }
+    return promise;
+  };
+
   return {
     name: 'resend-http',
     version: '1.0.0',
 
-    send(mail: { data: ResendMailData }, callback: SendCallback) {
+    send(mail: { data: ResendMailData }, callback?: SendCallback) {
       const { to, from, subject, html, text } = mail.data;
 
-      request('/emails', {
+      const promise = request('/emails', {
         from: from || defaultFrom,
         to: Array.isArray(to) ? to : [to],
         subject,
         html,
         text,
-      })
-        .then(async (res) => {
-          const body = (await res.json()) as { message?: string; id?: string };
-          if (!res.ok) {
-            callback(new Error(body?.message || `Resend error ${res.status}`));
-            return;
-          }
-          callback(null, body);
-        })
-        .catch((err: Error) => callback(err));
+      }).then(async (res) => {
+        const body = (await res.json()) as { message?: string; id?: string };
+        if (!res.ok) {
+          throw new Error(body?.message || `Resend error ${res.status}`);
+        }
+        return body;
+      });
+
+      return settle(promise, callback);
     },
 
-    verify(callback: VerifyCallback) {
-      request('/domains')
-        .then((res) =>
-          res.ok ? callback(null, true) : callback(new Error(`Resend API error ${res.status}`)),
-        )
-        .catch((err: Error) => callback(err));
+    verify(callback?: VerifyCallback) {
+      const promise = request('/domains').then((res) => {
+        if (!res.ok) {
+          throw new Error(`Resend API error ${res.status}`);
+        }
+        return true;
+      });
+
+      return settle(promise, callback);
     },
   };
 }
