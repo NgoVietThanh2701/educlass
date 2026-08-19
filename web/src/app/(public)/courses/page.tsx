@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useDeferredValue, useState } from "react";
+import { Suspense, useEffect, useDeferredValue, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, RotateCcw, Search } from "lucide-react";
 
@@ -112,7 +112,7 @@ function parseSearchParams(query: string) {
   };
 }
 
-export default function PublicCoursesPage() {
+function PublicCoursesPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -443,5 +443,29 @@ export default function PublicCoursesPage() {
         </div>
       </Container>
     </section>
+  );
+}
+
+/**
+ * `useSearchParams()` must sit inside a Suspense boundary — otherwise Next.js
+ * throws during static generation / at deploy. The real listing lives in
+ * `PublicCoursesPageContent`; the fallback reuses the same skeleton as the
+ * loading state.
+ */
+export default function PublicCoursesPage() {
+  return (
+    <Suspense
+      fallback={
+        <Container>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <PublicCourseCardSkeleton key={i} />
+            ))}
+          </div>
+        </Container>
+      }
+    >
+      <PublicCoursesPageContent />
+    </Suspense>
   );
 }
