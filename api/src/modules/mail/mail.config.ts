@@ -7,9 +7,12 @@ export const mailConfig = (config: ConfigService) => ({
     host: config.getOrThrow('MAIL_HOST'),
     port: Number(config.getOrThrow('MAIL_PORT')),
     secure: config.getOrThrow('MAIL_SECURE') === 'true', // true cho 465
-    family: 4,
+    family: 4, // force IPv4 (cloud hosts often lack an IPv6 route)
     pool: true,
     maxConnections: 5,
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 15_000,
     auth: {
       user: config.getOrThrow('MAIL_USER'),
       pass: config.getOrThrow('MAIL_PASSWORD'),

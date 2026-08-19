@@ -18,7 +18,14 @@ export class MailService implements OnModuleInit {
     this.supportEmail = config.getOrThrow('MAIL_SUPPORT');
   }
 
-  async onModuleInit() {
+  onModuleInit() {
+    // Fire-and-forget (NOT awaited): SMTP verification must not block the HTTP
+    // server from listening — otherwise cloud health checks (e.g. Render) report
+    // "No open ports detected" whenever the SMTP host is slow/unreachable.
+    void this.verifySmtp();
+  }
+
+  private async verifySmtp() {
     try {
       const transporter = this.mailerService.getTransporter();
       await transporter.verify();

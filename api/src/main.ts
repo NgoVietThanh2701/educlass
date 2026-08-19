@@ -6,8 +6,13 @@ import { AppConfig } from '@common/constants/app-config.constant';
 import cookieParser from 'cookie-parser';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import helmet from 'helmet';
+import { setDefaultResultOrder } from 'node:dns';
 
 async function bootstrap() {
+  // Prefer IPv4 name resolution: cloud hosts (Render) often have no IPv6 route,
+  // and smtp.gmail.com resolves to AAAA addresses → `ENETUNREACH` breaks SMTP.
+  setDefaultResultOrder('ipv4first');
+
   const app = await NestFactory.create(AppModule);
 
   // Graceful shutdown for k8s / process managers: drains in-flight requests,
