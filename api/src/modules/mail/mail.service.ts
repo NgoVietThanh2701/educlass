@@ -19,19 +19,19 @@ export class MailService implements OnModuleInit {
   }
 
   onModuleInit() {
-    // Fire-and-forget (NOT awaited): SMTP verification must not block the HTTP
+    // Fire-and-forget (NOT awaited): mail verification must not block the HTTP
     // server from listening — otherwise cloud health checks (e.g. Render) report
-    // "No open ports detected" whenever the SMTP host is slow/unreachable.
-    void this.verifySmtp();
+    // "No open ports detected" whenever the mail provider is slow/unreachable.
+    void this.verifyMail();
   }
 
-  private async verifySmtp() {
+  private async verifyMail() {
     try {
       const transporter = this.mailerService.getTransporter();
       await transporter.verify();
-      this.logger.log('SMTP connection established successfully.');
+      this.logger.log('Mail transport verified successfully.');
     } catch (err) {
-      this.logger.error('SMTP verification failed.', err);
+      this.logger.error('Mail transport verification failed.', err);
     }
   }
 

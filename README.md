@@ -25,8 +25,8 @@ role-based access for **Teacher / Student** (+ seeded Admin/Manager).
 - **Socket.IO** (`@nestjs/platform-socket.io` + `IoAdapter`) for realtime chat
 - `@nestjs/throttler` (rate limiting), `@nestjs/schedule`,
   `@nestjs/swagger`, **Helmet**, `cookie-parser`
-- **Redis** (`ioredis`), **nodemailer** (`@nestjs-modules/mailer`),
-  **Cloudinary** uploads
+- **Redis** (`ioredis`), **nodemailer** (`@nestjs-modules/mailer`) with a custom
+  **Resend HTTP API** transport, **Cloudinary** uploads
 
 ### Frontend (`web/`)
 
@@ -100,7 +100,7 @@ educlass/
 - **Node.js** ≥ 20
 - **PostgreSQL** 14+ (local or Neon)
 - **Redis** (used by rate-limit / OTP keys)
-- **SMTP credentials** (for OTP / welcome emails)
+- **Resend** API key (for OTP / welcome emails — HTTPS API, no SMTP)
 - **Cloudinary** account (image/file uploads)
 - **Google OAuth** client (optional, for "Continue with Google")
 - `api/.env` and `web/.env.local` configured (see below)
@@ -122,7 +122,9 @@ Swagger docs: `http://localhost:5000/api/docs` (dev only unless
 `SWAGGER_ENABLED=true`).
 
 Key env vars (`api/.env`): `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`,
-`REDIS_HOST/PORT/DB`, `MAIL_*`, `ALLOWED_ORIGINS`, `APP_URL`, `TRUST_PROXY`,
+`REDIS_HOST/PORT/DB`, `RESEND_API_KEY`, `MAIL_FROM`, `MAIL_FROM_NAME`,
+`MAIL_SUPPORT`,
+`ALLOWED_ORIGINS`, `APP_URL`, `TRUST_PROXY`,
 `SWAGGER_ENABLED`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
 `GOOGLE_CALLBACK_URL` (web origin, e.g.
 `http://localhost:3000/api/v1/auth/google/callback`), `CLOUDINARY_*`.
